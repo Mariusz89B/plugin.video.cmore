@@ -1,0 +1,77 @@
+# XBMC Media Center language file
+# Addon Name: C More
+# Addon id: plugin.video.cmore
+# Addon Provider: C More
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: XBMC Translation Team\n"
+"Language-Team: Swedish (http://www.transifex.com/projects/p/xbmc-addons/language/sv/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: sv\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "With us at C More, you can watch at most two devices at the same time, with a limit of one stream for each individual sports broadcast. You can watch two different matches/live sports broadcasts at the same time, but you can not watch the same match on two different devices."
+msgstr "Hos oss på C More kan du titta som mest på två enheter samtidigt, med en begränsning på en ström för varje enskild sportsändning. Du kan se två olika matcher/livesportsändningar samtidigt men du kan inte se samma match på två olika enheter."
+
+msgctxt "#30001"
+msgid "Site"
+msgstr "Webbplats"
+
+msgctxt "#30002"
+msgid "Username"
+msgstr "Användarnamn"
+
+msgctxt "#30003"
+msgid "Password"
+msgstr "Lösenord"
+
+msgctxt "#30004"
+msgid "Input username"
+msgstr "Fyll i användarnamn"
+
+msgctxt "#30005"
+msgid "Input password"
+msgstr "Fyll i lösenord"
+
+msgctxt "#30006"
+msgid "Could not connect to site"
+msgstr "Det gick inte att ansluta till webbplatsen"
+
+msgctxt "#30007"
+msgid "Sign in error"
+msgstr "Inloggningsfel"
+
+msgctxt "#30008"
+msgid "Sign in"
+msgstr "Logga in"
+
+msgctxt "#30009"
+msgid "Signed in as {}"
+msgstr "Inloggad som {}"
+
+msgctxt "#30010"
+msgid "TV channels"
+msgstr "TV kanaler"
+
+msgctxt "#30011"
+msgid "VOD"
+msgstr "VOD"
+
+msgctxt "#30012"
+msgid "C More"
+msgstr "C More"
+
+msgctxt "#30013"
+msgid "Maximum number of device units added"
+msgstr "Maximalt antal enheter tillagda"
+
+msgctxt "#30014"
+msgid "Would you like to start program from the beginning?"
+msgstr "Vill du starta programmet från början?"

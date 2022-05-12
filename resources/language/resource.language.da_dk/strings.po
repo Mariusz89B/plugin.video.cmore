@@ -1,0 +1,77 @@
+# XBMC Media Center language file
+# Addon Name: C More
+# Addon id: plugin.video.cmore
+# Addon Provider: C More
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: XBMC Translation Team\n"
+"Language-Team: Danish (http://www.transifex.com/projects/p/xbmc-addons/language/da/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: da\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "With us at C More, you can watch at most two devices at the same time, with a limit of one stream for each individual sports broadcast. You can watch two different matches/live sports broadcasts at the same time, but you can not watch the same match on two different devices."
+msgstr "Hos os på C More kan du højst se to enheder på samme tid, med en begrænsning på én stream for hver enkelt sportsudsendelse. Du kan se to forskellige kampe/live sportsudsendelser på samme tid, men du kan ikke se den samme kamp på to forskellige enheder."
+
+msgctxt "#30001"
+msgid "Site"
+msgstr "Websted"
+
+msgctxt "#30002"
+msgid "Username"
+msgstr "Brugernavn"
+
+msgctxt "#30003"
+msgid "Password"
+msgstr "Adgangskode"
+
+msgctxt "#30004"
+msgid "Input username"
+msgstr "Indtast brugernavn"
+
+msgctxt "#30005"
+msgid "Input password"
+msgstr "Indtast adgangskode"
+
+msgctxt "#30006"
+msgid "Could not connect to site"
+msgstr "Kunne ikke oprette forbindelse til webstedet"
+
+msgctxt "#30007"
+msgid "Sign in error"
+msgstr "Fejl ved login"
+
+msgctxt "#30008"
+msgid "Sign in"
+msgstr "Log ind"
+
+msgctxt "#30009"
+msgid "Signed in as {}"
+msgstr "Logget ind som {}"
+
+msgctxt "#30010"
+msgid "TV channels"
+msgstr "TV kanaler"
+
+msgctxt "#30011"
+msgid "VOD"
+msgstr "VOD"
+
+msgctxt "#30012"
+msgid "C More"
+msgstr "C More"
+
+msgctxt "#30013"
+msgid "Maximum number of device units added"
+msgstr "Maksimalt antal enheder tilføjet"
+
+msgctxt "#30014"
+msgid "Would you like to start program from the beginning?"
+msgstr "Vil du starte programmet fra begyndelsen?"
