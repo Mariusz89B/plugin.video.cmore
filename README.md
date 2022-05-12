@@ -1,5 +1,5 @@
-[![GitHub release](https://img.shields.io/github/v/release/Mariusz89B/plugin.video.cmore.svg)](https://github.com/Mariusz89B/script.mtvguide/releases)
-[![GitHub downloads](https://img.shields.io/github/downloads/Mariusz89B/plugin.video.cmore/total.svg)](https://github.com/Mariusz89B/script.mtvguide)
+[![GitHub release](https://img.shields.io/github/v/release/Mariusz89B/plugin.video.cmore.svg)](https://github.com/Mariusz89B/plugin.video.cmore/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/Mariusz89B/plugin.video.cmore/total.svg)](https://github.com/Mariusz89B/plugin.video.cmore)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-red.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Kodi](https://img.shields.io/badge/platform-Kodi-lightgrey.svg)](https://kodi.tv/)
