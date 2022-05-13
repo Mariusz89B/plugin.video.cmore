@@ -756,7 +756,8 @@ def live_channel(exlink):
 
         start = program['startTime']['timestamp'] // 1000
         dt_start = datetime.fromtimestamp(start)
-        st_start = dt_start.strftime('%Y-%m-%d %H:%M')
+        st_start = dt_start.strftime('%H:%M')
+        da_start = dt_start.strftime('%Y-%m-%d')
 
         end = program['endTime']['timestamp'] // 1000
         dt_end = datetime.fromtimestamp(end)
@@ -764,17 +765,20 @@ def live_channel(exlink):
 
         duration = end - start
 
+        aired = da_start
+        date = st_start + ' - ' + st_end
+
         title = program['title']
         if int(now) >= int(start) and int(now) <= int(end):
-            now_playing = localized(30029)
-            name = title + '[B][COLOR red] [{0}] [/COLOR][/B]'.format(now_playing)
-        elif int(end) >= int(now):
-            name = '[COLOR grey]' + title + '[/COLOR]'
-        else:
-            name = title + '[COLOR limegreen] ● [/COLOR]'
+            name_ = title + '[B][COLOR violet] ● [/COLOR][/B]'
 
-        aired = st_start
-        date = st_start + ' - ' + st_end
+        elif int(end) >= int(now):
+            name_ = '[COLOR grey]' + title + '[/COLOR] [B][/B]'
+
+        else:
+            name_ = title + '[B][COLOR limegreen] ● [/COLOR][/B]'
+
+        name = name_ + '[COLOR grey](' + date + ')[/COLOR]'
 
         catchup = 'LIVE'
 
