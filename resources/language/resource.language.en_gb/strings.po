@@ -75,3 +75,63 @@ msgstr ""
 msgctxt "#30014"
 msgid "Would you like to start program from the beginning?"
 msgstr ""
+
+msgctxt "#30015"
+msgid "Error"
+msgstr ""
+
+msgctxt "#30016"
+msgid "Search could not be found: {}"
+msgstr ""
+
+msgctxt "#30017"
+msgid "No such movie: {}"
+msgstr ""
+
+msgctxt "#30018"
+msgid "No such TV program: {}"
+msgstr ""
+
+msgctxt "#30019"
+msgid "Program search"
+msgstr ""
+
+msgctxt "#30020"
+msgid "Add-on Install"
+msgstr ""
+
+msgctxt "#30021"
+msgid "C More restart required"
+msgstr ""
+
+msgctxt "#30022"
+msgid "Add-on error!"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Missing add-on: {}."
+msgstr ""
+
+msgctxt "#30024"
+msgid "Search extended information"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Search as movie"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Search as TV show"
+msgstr ""
+
+msgctxt "#30027"
+msgid "Extended information"
+msgstr ""
+
+msgctxt "#30028"
+msgid "Program has not yet started."
+msgstr ""
+
+msgctxt "#30029"
+msgid "Now playing"
+msgstr ""

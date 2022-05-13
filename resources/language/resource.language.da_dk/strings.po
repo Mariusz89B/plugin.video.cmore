@@ -75,3 +75,63 @@ msgstr "Maksimalt antal enheder tilføjet"
 msgctxt "#30014"
 msgid "Would you like to start program from the beginning?"
 msgstr "Vil du starte programmet fra begyndelsen?"
+
+msgctxt "#30015"
+msgid "Error"
+msgstr "Fejl"
+
+msgctxt "#30016"
+msgid "Search could not be found: {}"
+msgstr "Søgningen kunne ikke findes: {}"
+
+msgctxt "#30017"
+msgid "No such movie: {}"
+msgstr "Ingen sådan film: {}"
+
+msgctxt "#30018"
+msgid "No such TV program: {}"
+msgstr "Intet sådant TV program: {}"
+
+msgctxt "#30019"
+msgid "Program search"
+msgstr "Programsøgning"
+
+msgctxt "#30020"
+msgid "Add-on Install"
+msgstr "Installation af tilføjelse"
+
+msgctxt "#30021"
+msgid "C More restart required"
+msgstr "C More genstart påkrævet"
+
+msgctxt "#30022"
+msgid "Add-on error!"
+msgstr "Fejl til tilføjelse!"
+
+msgctxt "#30023"
+msgid "Missing add-on: {}."
+msgstr "Manglende tilføjelse: {}."
+
+msgctxt "#30024"
+msgid "Search extended information"
+msgstr "Søg i udvidet information"
+
+msgctxt "#30025"
+msgid "Search as movie"
+msgstr "Søg som film"
+
+msgctxt "#30026"
+msgid "Search as TV show"
+msgstr "Søg som TV program"
+
+msgctxt "#30027"
+msgid "Extended information"
+msgstr "Udvidet information"
+
+msgctxt "#30028"
+msgid "Program has not yet started."
+msgstr "Programmet er endnu ikke startet."
+
+msgctxt "#30029"
+msgid "Now playing"
+msgstr "Afspiller nu"

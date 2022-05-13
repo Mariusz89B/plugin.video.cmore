@@ -64,6 +64,8 @@ import threading
 import six
 import uuid
 
+from ext import c_ext_info
+
 base_url = sys.argv[0]
 addon_handle = int(sys.argv[1])
 params = dict(urlparse.parse_qsl(sys.argv[2][1:]))
@@ -71,7 +73,7 @@ addon = xbmcaddon.Addon(id='plugin.video.cmore')
 
 exlink = params.get('url', None)
 extitle = params.get('label', None)
-exmid = params.get('mid', None)
+exid = params.get('m_id', None)
 excatchup = params.get('catchup', None)
 exstart = params.get('start', None)
 exend = params.get('end', None)
@@ -79,6 +81,7 @@ exend = params.get('end', None)
 profile_path = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
 
 localized = xbmcaddon.Addon().getLocalizedString
+x_localized = xbmc.getLocalizedString
 
 path = addon.getAddonInfo('path')
 resources = path + '/resources/'
@@ -133,13 +136,15 @@ class Threading(object):
 def build_url(query):
     return base_url + '?' + urlencode(query)
 
-def add_item(label, url, mode, folder, playable, mid=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
+def add_item(label, url, mode, folder, playable, m_id=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
     list_item = xbmcgui.ListItem(label=label)
 
     if playable:
         list_item.setProperty('IsPlayable', 'true')
-        context_menu_items = []
-        context_menu_items.append(('Info', 'XBMC.Action(Info)'))
+
+        if context_menu:
+            info = x_localized(19047)
+            context_menu.insert(0, (info, 'Action(Info)'))
 
     if context_menu:
         list_item.addContextMenuItems(context_menu, replaceItems=True)
@@ -157,7 +162,7 @@ def add_item(label, url, mode, folder, playable, mid=None, catchup=None, start=N
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
-        url = build_url({'title': label, 'mode':mode, 'url':url, 'mid':mid, 'catchup':catchup, 'start':start, 'end':end, 'page':page, 'plot':plot, 'image':icon}),
+        url = build_url({'title': label, 'mode':mode, 'url':url, 'm_id':m_id, 'catchup':catchup, 'start':start, 'end':end, 'page':page, 'plot':plot, 'image':icon}),
         listitem=list_item,
         isFolder=folder)
 
@@ -271,7 +276,7 @@ def login_service():
         if dashjs == '':
             try:
                 msg = localized(30000)
-                xbmcgui.Dialog().ok('C More', str(msg))
+                xbmcgui.Dialog().ok(localized(30012), str(msg))
             except:
                 pass
 
@@ -393,15 +398,15 @@ def login_data(reconnect, retry=0):
                 retry += 1
                 login_service(reconnect=True, retry=retry)
             else:
-                xbmcgui.Dialog().notification(localized(30012), localized(30006))
-                return False
+                xbmcgui.Dialog().notification(localized(30012), localized(30007))
+                return False, None
 
         j_response = response.json()
 
         try:
             if 'Username/password was incorrect' in j_response['errorMessage']:
                 xbmcgui.Dialog().notification(localized(30012), localized(30007))
-                return False
+                return False, None
         except:
             pass
 
@@ -452,7 +457,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False
+                    return False, None
 
             elif response['errorCode'] == 9030:
                 print('errorCode 9030')
@@ -463,7 +468,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False
+                    return False, None
 
             elif response['errorCode'] == 61002:
                 print('errorCode 61002')
@@ -474,7 +479,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False
+                    return False, None
 
         except:
             pass
@@ -502,7 +507,7 @@ def login_data(reconnect, retry=0):
             if reconnect:
                 login_service(reconnect=True)
             else:
-                return False
+                return False, None
 
         response = response.json()
 
@@ -547,7 +552,7 @@ def live_channels():
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
         return
 
-    check_login()
+    #check_login()
 
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
@@ -730,9 +735,9 @@ def live_channel(exlink):
           "recordAndWatch\n       programs(timestamp: $timestamp, limit: $limit, offset: $offset) {\n  id\n"
           "programItems {\n id \n title\n startTime{timestamp}\n endTime{timestamp}\n live\n rerun\n __typename\n"
           "media{\n ...sport \n ...movie \n ...episode}    }\n}}}\n"
-          "\nfragment sport on SportEvent{id\n title\n descriptionLong\n images{\nshowcard2x3{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
-          "\nfragment movie on Movie{id\n title\n descriptionLong\n images{\nshowcard2x3{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
-          "\nfragment episode on Episode{id\n title\n descriptionLong\n images{\nshowcard2x3{\nsource}}\n  playback\n{\nplay{\nsubscription {\nitem{\nid \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} ")
+          "\nfragment sport on SportEvent{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
+          "\nfragment movie on Movie{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \naudioLang{\nname} \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
+          "\nfragment episode on Episode{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n  playback\n{\nplay{\nsubscription {\nitem{\nid \naudioLang{\nname} \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} ")
         )
 
     response = requests.get(url, headers=headers, params=params, verify=False).json()
@@ -747,7 +752,7 @@ def live_channel(exlink):
     for program in program_items:
         count += 1
 
-        title = program['title']
+        now = int(time.time())
 
         start = program['startTime']['timestamp'] // 1000
         dt_start = datetime.fromtimestamp(start)
@@ -755,22 +760,39 @@ def live_channel(exlink):
 
         end = program['endTime']['timestamp'] // 1000
         dt_end = datetime.fromtimestamp(end)
-        st_end = dt_end.strftime('%Y-%m-%d %H:%M')
+        st_end = dt_end.strftime('%H:%M')
 
-        name = title + ' - ' + '[COLOR grey][' + st_start + ' - ' + st_end + '][/COLOR]'
+        duration = end - start
+
+        title = program['title']
+        if int(now) >= int(start) and int(now) <= int(end):
+            now_playing = localized(30029)
+            name = title + '[B][COLOR red] [{0}] [/COLOR][/B]'.format(now_playing)
+        elif int(end) >= int(now):
+            name = '[COLOR grey]' + title + '[/COLOR]'
+        else:
+            name = title + '[COLOR limegreen] ● [/COLOR]'
+
+        aired = st_start
+        date = st_start + ' - ' + st_end
 
         catchup = 'LIVE'
 
-        mid = ''
+        m_id = ''
         plot = ''
         genre = ''
+        lang = ''
         img = ''
 
         media = program.get('media')
         if media:
-            mid = media['id'] 
+            m_id = media['id'] 
             plot = media['descriptionLong']
             genre = media['genre']
+
+            audio_lang = media.get('audioLang') 
+            if audio_lang:
+                lang = audio_lang.get('name')
 
             playback = media.get('playback')
 
@@ -789,19 +811,23 @@ def live_channel(exlink):
 
             images = media.get('images')
             if images:
-                card = images['showcard2x3']
+                card = images['showcard16x9']
                 if card:
                     src = card['source']
-                    img = unquote(src).replace('2x3', '16x9')
+                    img = unquote(src)
 
-        add_item(label=name, url=exlink, mode='play', mid=mid, catchup=catchup, start=start, end=end, icon=img, folder=False, playable=True, info_labels={'title':title, 'plot':plot}, fanart=fanart, item_count=count)
+        ext = localized(30027)
+        context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
+        add_item(label=name, url=exlink, mode='play', m_id=m_id, catchup=catchup, start=start, end=end, icon=img, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, fanart=fanart, context_menu=context_menu, item_count=count)
+
+    xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
 
 def get_stream(exlink, catchup_type):
     stream_url = None
 
-    check_login()
+    #check_login()
 
     dashjs = addon.getSetting('cmore_devush')
     beartoken = addon.getSetting('cmore_beartoken')
@@ -945,15 +971,18 @@ def get_stream(exlink, catchup_type):
 
 def play(exlink, title, media_id, catchup_type, start, end):
 
-    now = int(time.time())*1000
+    now = int(time.time())
 
-    if int(end) < int(now): # Need refactoring
+    if int(now) >= int(start) and int(now) <= int(end):
         response = xbmcgui.Dialog().yesno(localized(30012), localized(30014))
         if response:
             exlink = media_id
             catchup_type = 'STARTOVER'
         else:
             catchup_type = 'LIVE'
+    elif int(end) >= int(now):
+        xbmcgui.Dialog().ok(localized(30012), localized(30028))
+        return
     else:
         if media_id:
             exlink = media_id
@@ -995,15 +1024,21 @@ def router(param):
     args = dict(urlparse.parse_qsl(param))
     if args:
         mode = args.get('mode', None)
-
         if mode == 'play':
-            play(exlink, extitle, exmid, excatchup, exstart, exend)
+            play(exlink, extitle, exid, excatchup, exstart, exend)
 
         elif mode == 'channels':
             live_channel(exlink)
 
         elif mode == 'live':
             live_channels()
+
+        elif mode == 'ext':
+            c_ext_info()
+
+        elif mode == 'login':
+            addon.openSettings()
+            xbmc.executebuiltin('Container.Refresh()')
 
     else:
         home()

@@ -75,3 +75,63 @@ msgstr "Maksimalt antall enheter lagt til"
 msgctxt "#30014"
 msgid "Would you like to start program from the beginning?"
 msgstr "Vil du starte programmet fra begynnelsen?"
+
+msgctxt "#30015"
+msgid "Error"
+msgstr "Feil"
+
+msgctxt "#30016"
+msgid "Search could not be found: {}"
+msgstr "Søket ble ikke funnet: {}"
+
+msgctxt "#30017"
+msgid "No such movie: {}"
+msgstr "Ingen slik film: {}"
+
+msgctxt "#30018"
+msgid "No such TV program: {}"
+msgstr "Ingen slikt TV program: {}"
+
+msgctxt "#30019"
+msgid "Program search"
+msgstr "Programsøk"
+
+msgctxt "#30020"
+msgid "Add-on Install"
+msgstr "Installasjon av tillegg"
+
+msgctxt "#30021"
+msgid "C More restart required"
+msgstr "C More omstart kreves"
+
+msgctxt "#30022"
+msgid "Add-on error!"
+msgstr "Tilleggsfeil!"
+
+msgctxt "#30023"
+msgid "Missing add-on: {}."
+msgstr "Mangler tillegg: {}."
+
+msgctxt "#30024"
+msgid "Search extended information"
+msgstr "Søk i utvidet informasjon"
+
+msgctxt "#30025"
+msgid "Search as movie"
+msgstr "Søk som film"
+
+msgctxt "#30026"
+msgid "Search as TV show"
+msgstr "Søk som TV program"
+
+msgctxt "#30027"
+msgid "Extended information"
+msgstr "Utvidet informasjon"
+
+msgctxt "#30028"
+msgid "Program has not yet started."
+msgstr "Programmet har ennå ikke startet."
+
+msgctxt "#30029"
+msgid "Now playing"
+msgstr "Spilles nå"
