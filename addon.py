@@ -73,7 +73,7 @@ addon = xbmcaddon.Addon(id='plugin.video.cmore')
 
 exlink = params.get('url', None)
 extitle = params.get('label', None)
-exid = params.get('m_id', None)
+exid = params.get('media_id', None)
 excatchup = params.get('catchup', None)
 exstart = params.get('start', None)
 exend = params.get('end', None)
@@ -136,7 +136,7 @@ class Threading(object):
 def build_url(query):
     return base_url + '?' + urlencode(query)
 
-def add_item(label, url, mode, folder, playable, m_id=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
+def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
     list_item = xbmcgui.ListItem(label=label)
 
     if playable:
@@ -162,7 +162,7 @@ def add_item(label, url, mode, folder, playable, m_id=None, catchup=None, start=
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
-        url = build_url({'title': label, 'mode':mode, 'url':url, 'm_id':m_id, 'catchup':catchup, 'start':start, 'end':end, 'page':page, 'plot':plot, 'image':icon}),
+        url = build_url({'title': label, 'mode':mode, 'url':url, 'media_id':media_id, 'catchup':catchup, 'start':start, 'end':end, 'page':page, 'plot':plot, 'image':icon}),
         listitem=list_item,
         isFolder=folder)
 
@@ -546,6 +546,192 @@ def login_data(reconnect, retry=0):
 
     return False, None
 
+def video_on_demand():
+    add_item(label=localized(30030), url='', mode='vod_genre_movies', icon=icon, fanart=fanart, folder=True, playable=False)
+    add_item(label='[COLOR grey]'+localized(30031)+'[/COLOR]', url='', mode='vod_genre_series', icon=icon, fanart=fanart, folder=True, playable=False)
+
+    xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
+
+def vod_genre_movies():
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/graphql'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': base[country],
+        'referer': base[country]+'/',
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.39',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.0',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    params = (
+        ('operationName', 'getSubPages'),
+        ('variables', '{"id":"movies"}'),
+        ('query', "\n    query getSubPages($id: String!) {\n  page(id: $id) {\n    id\n    subPages {\n      \nitems{ \nid \nname }    }\n  }\n}\n    ")
+    )
+
+    response = send_req(url, params=params, headers=headers)
+    if response:
+        j_response = response.json()
+
+    genres = []
+
+    for item in j_response['data']['page']['subPages']['items']:
+        genres.append((item['id'], item['name']))
+
+    for genre in genres:
+        add_item(label=genre[1], url=genre[0], mode='vod_movies', icon=icon, fanart=fanart, folder=True, playable=False)
+
+    xbmcplugin.setContent(addon_handle, 'sets')
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def vod_genre_series():
+    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
+
+def vod_movies(genre_id):
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/graphql'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': base[country],
+        'referer': base[country]+'/',
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.39',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.0',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    params = (
+        ('operationName', 'getPage'),
+        ('variables', '{"id":"'+genre_id+'","limit":10,"offset":0}'),
+        ('extensions', '{"persistedQuery":{"version":1,"sha256Hash":"d1db0ba11b041b669f2bced269e2ffa1d608f93cd0132e12ca8210f9879f4685"}}',)
+        #('query', "\n    query getPage($id: String!, $limit: Int, $offset: Int) {\n  page(id: $id) {\n    id\n    pagePanels(limit: $limit, offset: $offset) {\n      id\n      items {\n        id\n title\n mediaContent { id\n }     }\n      pageInfo {\n        totalCount\n        hasNextPage\n        nextPageOffset\n      }\n    }\n    subPages {\n      items { id\n }    }\n  }\n}\n    \n")
+    )
+
+    response = send_req(url, params=params, headers=headers)
+    if response:
+        j_response = response.json()
+
+    count = 0
+
+    for data in j_response['data']['page']['pagePanels']['items']:
+
+        media_content = data.get('mediaContent')
+        if media_content:
+            items = media_content['items']
+        else:
+            items = data
+
+        for item in items:
+            count += 1
+
+            media_id = ''
+            plot = ''
+            genre = ''
+            duration = ''
+            date = ''
+            age = ''
+            img = ''
+
+            try:
+                media = item['media']
+            except:
+                media = False
+
+            if media:
+                title = media.get('title')
+                plot = media.get('descriptionLong')
+                genre = media.get('genre')
+                year = media.get('yearProduction')
+                if year:
+                    date = year['readable']
+
+                age = media.get('ageRating')
+                ratings = media.get('ratings')
+
+                if ratings:
+                    imdb = ratings.get('imdb')
+                    if imdb:
+                        rating = imdb['readableScore']
+
+                d = media.get('duration')
+                if d:
+                    duration = d['seconds']
+
+                playback = media.get('playback')
+                if playback:
+                    play = playback['play']
+                    linear = play.get('linear')
+                    if linear:
+                        item = linear.get('item')
+                        media_id = item['playbackSpec']['videoId']
+
+                    rental = play.get('rental')
+                    if rental:
+                        for item in rental:
+                            media_id = item['item']['playbackSpec']['videoId']
+
+                    subscription = play.get('subscription')
+                    if subscription:
+                        for item in subscription:
+                            media_id = item['item']['playbackSpec']['videoId']
+
+                images = media.get('images')
+                if images:
+                    card_2x3 = images.get('showcard2x3')
+                    if card_2x3:
+                        src = card_2x3['source']
+                        poster = unquote(src)
+
+                    card_16x9 = images.get('showcard16x9')
+                    if card_16x9:
+                        src = card_16x9['source']
+                        img = unquote(src)
+
+                ext = localized(30027)
+                context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+
+                xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+                add_item(label=title, url='vod', mode='play', media_id=media_id, icon=img, poster=poster, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, fanart=fanart, context_menu=context_menu, item_count=count)
+
+    xbmcplugin.setContent(addon_handle, 'sets')
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def vod_series(genre_id):
+    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
+
+def search():
+    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
+
 def live_channels():
     login, profile = login_service()
     if not login:
@@ -681,7 +867,7 @@ def live_channels():
                     img = icons.get('dark').get('source')
                     icon = unquote(img)
 
-                add_item(label=name, url=exlink, mode='channels', icon=icon, folder=True, playable=False, info_labels={'title':name, 'plot':name}, fanart=fanart, item_count=count)
+                add_item(label=name, url=exlink, mode='programs', icon=icon, folder=True, playable=False, info_labels={'title':name, 'plot':name}, fanart=fanart, item_count=count)
 
         xbmcplugin.endOfDirectory(addon_handle)
 
@@ -782,7 +968,7 @@ def live_channel(exlink):
 
         catchup = 'LIVE'
 
-        m_id = ''
+        media_id = ''
         plot = ''
         genre = ''
         lang = ''
@@ -790,7 +976,7 @@ def live_channel(exlink):
 
         media = program.get('media')
         if media:
-            m_id = media['id'] 
+            media_id = media['id'] 
             plot = media['descriptionLong']
             genre = media['genre']
 
@@ -815,7 +1001,8 @@ def live_channel(exlink):
 
             images = media.get('images')
             if images:
-                card = images['showcard16x9']
+                card_2x3 = images.get('showcard2x3')
+                card = images.get('showcard16x9')
                 if card:
                     src = card['source']
                     img = unquote(src)
@@ -823,7 +1010,7 @@ def live_channel(exlink):
         ext = localized(30027)
         context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-        add_item(label=name, url=exlink, mode='play', m_id=m_id, catchup=catchup, start=start, end=end, icon=img, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, fanart=fanart, context_menu=context_menu, item_count=count)
+        add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, icon=img, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -974,24 +1161,28 @@ def get_stream(exlink, catchup_type):
     return None, None
 
 def play(exlink, title, media_id, catchup_type, start, end):
+    if exlink != 'vod':
+        now = int(time.time())
 
-    now = int(time.time())
-
-    if int(now) >= int(start) and int(now) <= int(end):
-        response = xbmcgui.Dialog().yesno(localized(30012), localized(30014))
-        if response:
-            exlink = media_id
-            catchup_type = 'STARTOVER'
+        if int(now) >= int(start) and int(now) <= int(end):
+            response = xbmcgui.Dialog().yesno(localized(30012), localized(30014))
+            if response:
+                exlink = media_id
+                catchup_type = 'STARTOVER'
+            else:
+                catchup_type = 'LIVE'
+        elif int(end) >= int(now):
+            xbmcgui.Dialog().ok(localized(30012), localized(30028))
+            return
         else:
-            catchup_type = 'LIVE'
-    elif int(end) >= int(now):
-        xbmcgui.Dialog().ok(localized(30012), localized(30028))
-        return
-    else:
-        if media_id:
-            exlink = media_id
+            if media_id:
+                exlink = media_id
 
-    strm_url, license_url = get_stream(exlink, catchup_type)
+        strm_url, license_url = get_stream(exlink, catchup_type)
+
+    else:
+        catchup_type = 'ONDEMAND'
+        strm_url, license_url = get_stream(media_id, catchup_type)
 
     PROTOCOL = 'mpd'
     DRM = 'com.widevine.alpha'
@@ -1018,24 +1209,45 @@ def home():
     login, profile = login_service()
     if login:
         add_item(label=localized(30009).format(profile), url='', mode='logged', icon=icon, fanart=fanart, folder=False, playable=False)
-        add_item(label=localized(30010), url='', mode='live', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30010), url='', mode='channels', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30011), url='', mode='video_on_demand', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label='[COLOR grey]'+localized(30032)+'[/COLOR]', url='', mode='search', icon=icon, fanart=fanart, folder=True, playable=False)
     else:
         add_item(label=localized(30008), url='', mode='login', icon=icon, fanart=fanart, folder=False, playable=False)
 
-    xbmcplugin.endOfDirectory(addon_handle)
+    xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
 
 def router(param):
     args = dict(urlparse.parse_qsl(param))
     if args:
         mode = args.get('mode', None)
+
         if mode == 'play':
             play(exlink, extitle, exid, excatchup, exstart, exend)
 
-        elif mode == 'channels':
+        elif mode == 'programs':
             live_channel(exlink)
 
-        elif mode == 'live':
+        elif mode == 'channels':
             live_channels()
+
+        elif mode == 'video_on_demand':
+            video_on_demand()
+
+        elif mode == 'vod_genre_movies':
+            vod_genre_movies()
+
+        elif mode == 'vod_genre_series':
+            vod_genre_series()
+
+        elif mode == 'vod_movies':
+            vod_movies(exlink)
+
+        elif mode == 'vod_series':
+            vod_series(exlink)
+
+        elif mode == 'search':
+            search()
 
         elif mode == 'ext':
             c_ext_info()

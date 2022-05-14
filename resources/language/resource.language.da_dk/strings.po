@@ -135,3 +135,15 @@ msgstr "Programmet er endnu ikke startet."
 msgctxt "#30029"
 msgid "Now playing"
 msgstr "Afspiller nu"
+
+msgctxt "#30030"
+msgid "Movies"
+msgstr "Film"
+
+msgctxt "#30031"
+msgid "Series"
+msgstr "Serie"
+
+msgctxt "#30032"
+msgid "Search"
+msgstr "Søg"
