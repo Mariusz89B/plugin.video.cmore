@@ -147,3 +147,11 @@ msgstr "Serier"
 msgctxt "#30032"
 msgid "Search"
 msgstr "Sök"
+
+msgctxt "#30033"
+msgid "Season"
+msgstr "Säsong"
+
+msgctxt "#30034"
+msgid "Episode"
+msgstr "Avsnitt"

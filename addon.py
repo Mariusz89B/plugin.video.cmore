@@ -368,9 +368,12 @@ def login_data(reconnect, retry=0):
 
         code = ''
 
-        if response:
-            j_response = response.json()
-            code = j_response['redirectUri'].replace('https://www.cmore.{cc}/?code='.format(cc=cc[country]), '')
+        if not response:
+            xbmcgui.Dialog().notification(localized(30012), localized(30006))
+            return
+
+        j_response = response.json()
+        code = j_response['redirectUri'].replace('https://www.cmore.{cc}/?code='.format(cc=cc[country]), '')
 
         url = 'https://logingateway.cmore.{cc}/logingateway/rest/v1/oauth/token'.format(cc=cc[country])
 
@@ -536,8 +539,9 @@ def login_data(reconnect, retry=0):
 
         if response:
             j_response = response.json()
-
-        profile = j_response['firstName']
+            profile = j_response['firstName']
+        else:
+            profile = 'N/A'
 
         return True, profile
 
@@ -548,11 +552,11 @@ def login_data(reconnect, retry=0):
 
 def video_on_demand():
     add_item(label=localized(30030), url='', mode='vod_genre_movies', icon=icon, fanart=fanart, folder=True, playable=False)
-    add_item(label='[COLOR grey]'+localized(30031)+'[/COLOR]', url='', mode='vod_genre_series', icon=icon, fanart=fanart, folder=True, playable=False)
+    add_item(label=localized(30031), url='', mode='vod_genre_series', icon=icon, fanart=fanart, folder=True, playable=False)
 
     xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
 
-def vod_genre_movies():
+def vod_genre(genre):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
@@ -581,7 +585,7 @@ def vod_genre_movies():
 
     params = (
         ('operationName', 'getSubPages'),
-        ('variables', '{"id":"movies"}'),
+        ('variables', '{"id":"'+genre+'"}'),
         ('query', "\n    query getSubPages($id: String!) {\n  page(id: $id) {\n    id\n    subPages {\n      \nitems{ \nid \nname }    }\n  }\n}\n    ")
     )
 
@@ -589,21 +593,17 @@ def vod_genre_movies():
     if response:
         j_response = response.json()
 
-    genres = []
+        genres = []
 
-    for item in j_response['data']['page']['subPages']['items']:
-        genres.append((item['id'], item['name']))
+        for item in j_response['data']['page']['subPages']['items']:
+            genres.append((item['id'], item['name']))
 
-    for genre in genres:
-        add_item(label=genre[1], url=genre[0], mode='vod_movies', icon=icon, fanart=fanart, folder=True, playable=False)
+        for genre in genres:
+            add_item(label=genre[1], url=genre[0], mode='vod', icon=icon, fanart=fanart, folder=True, playable=False)
 
-    xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
 
-def vod_genre_series():
-    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
-
-def vod_movies(genre_id):
+def vod(genre_id):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
@@ -641,71 +641,241 @@ def vod_movies(genre_id):
     if response:
         j_response = response.json()
 
-    count = 0
+        titles = set()
+        count = 0
 
-    for data in j_response['data']['page']['pagePanels']['items']:
+        for data in j_response['data']['page']['pagePanels']['items']:
 
-        media_content = data.get('mediaContent')
-        if media_content:
-            items = media_content['items']
-        else:
-            items = data
+            media_content = data.get('mediaContent')
+            if media_content:
+                items = media_content['items']
+            else:
+                items = data
+
+            for item in items:
+                count += 1
+
+                media_type = 'MOVIE'
+                folder = False
+                playable = True
+                mode = 'play'
+
+                media_id = ''
+                plot = ''
+                outline = ''
+                genre = ''
+                duration = ''
+                date = ''
+                age = ''
+
+                try:
+                    media = item['media']
+                except:
+                    media = False
+
+                if media:
+                    title = media.get('title')
+                    media_id = media.get('id')
+                    outline = media.get('description')
+                    plot = media.get('descriptionLong')
+                    if not plot:
+                        plot = outline
+                    genre = media.get('genre')
+                    year = media.get('yearProduction')
+                    if year:
+                        date = year['readable']
+
+                    age = media.get('ageRating')
+                    ratings = media.get('ratings')
+
+                    if ratings:
+                        imdb = ratings.get('imdb')
+                        if imdb:
+                            rating = imdb['readableScore']
+
+                    d = media.get('duration')
+                    if d:
+                        duration = d['seconds']
+
+                    playback = media.get('playback')
+                    if playback:
+                        play = playback['play']
+                        linear = play.get('linear')
+                        if linear:
+                            item = linear.get('item')
+                            media_id = item['playbackSpec']['videoId']
+
+                        rental = play.get('rental')
+                        if rental:
+                            for item in rental:
+                                media_id = item['item']['playbackSpec']['videoId']
+
+                        subscription = play.get('subscription')
+                        if subscription:
+                            for item in subscription:
+                                media_id = item['item']['playbackSpec']['videoId']
+
+                    media_type = media.get('mediaType')
+                    if media_type != 'MOVIE':
+                        folder = True
+                        playable = False
+                        mode = 'seasons'
+
+                    images = media.get('images')
+                    if images:
+                        card_2x3 = images.get('showcard2x3')
+                        if card_2x3:
+                            src = card_2x3['source']
+                            poster = unquote(src)
+
+                        card_16x9 = images.get('showcard16x9')
+                        if card_16x9:
+                            src = card_16x9['source']
+                            icon = unquote(src)
+
+                    ext = localized(30027)
+                    context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+
+                    xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+
+                    if title not in titles:
+                        add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                        titles.add(title)
+
+    xbmcplugin.setContent(addon_handle, 'sets')
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def vod_seasons(media_id):
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/graphql'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': base[country],
+        'referer': base[country]+'/',
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.39',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.0',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    params = {
+    'operationName': 'getSeries',
+    'variables': '{"id":"'+media_id+'"}',
+    'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"6d6726a4674427f605492639073647bb23d99c944bf49da55c6733e354ae430e"}}',
+    }
+
+    response = send_req(url, params=params, headers=headers)
+    if response:
+        j_response = response.json()
+
+        seasons = j_response['data']['series']['suggestedEpisode']['series']['seasonLinks']['items']
+
+        for item in seasons:
+            season_id = item['id']
+
+            params = {
+                'operationName': 'getSeason',
+                'variables': '{"seasonId":"'+season_id+'","limit":50,"offset":0}',
+                'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"bf4af75b6a97b3a2db09bc5f04a329c64349c82f6e8a8a3a379b066e96fa36a1"}}',
+            }
+
+            response = send_req(url, params=params, headers=headers)
+            if response:
+                j_response = response.json()
+
+                season = j_response['data']['season']['seasonNumber']['number']
+                label = localized(30033) + ' ' + str(season)
+
+                add_item(label=label, url=season, mode='episodes', media_id=season_id, playable=False, folder=True, icon=icon, fanart=fanart)
+
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def vod_episodes(season, season_id):
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/graphql'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': base[country],
+        'referer': base[country]+'/',
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.39',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.0',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    params = {
+        'operationName': 'getSeason',
+        'variables': '{"seasonId":"'+season_id+'","limit":50,"offset":0}',
+        'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"bf4af75b6a97b3a2db09bc5f04a329c64349c82f6e8a8a3a379b066e96fa36a1"}}',
+    }
+
+    response = send_req(url, params=params, headers=headers)
+    if response:
+        j_response = response.json()
+
+        items = j_response['data']['season']['episodes']['episodeItems']
+
+        count = 0
 
         for item in items:
             count += 1
 
-            media_id = ''
-            plot = ''
-            genre = ''
-            duration = ''
-            date = ''
-            age = ''
-            img = ''
+            season_ = item['seasonNumber']['number']
 
-            try:
-                media = item['media']
-            except:
-                media = False
+            if int(season) == int(season_):
+                title = item['title']
+                media_id = item['id']
 
-            if media:
-                title = media.get('title')
-                plot = media.get('descriptionLong')
-                genre = media.get('genre')
-                year = media.get('yearProduction')
-                if year:
-                    date = year['readable']
+                episode_r = item['episodeNumber']['readable']
+                season_r = item['seasonNumber']['readable']
 
-                age = media.get('ageRating')
-                ratings = media.get('ratings')
+                label = episode_r
 
-                if ratings:
-                    imdb = ratings.get('imdb')
-                    if imdb:
-                        rating = imdb['readableScore']
+                plot = item.get('descriptionLong')
+                directors = item.get('directors')
+                actors = item.get('actors')
+                genre = item.get('genre')
+                sub_genre = item.get('subGenres')
 
-                d = media.get('duration')
-                if d:
-                    duration = d['seconds']
+                age_rating = ''
+                age = item.get('ageRating')
+                if age:
+                    age_rating = age.get('readable')
 
-                playback = media.get('playback')
-                if playback:
-                    play = playback['play']
-                    linear = play.get('linear')
-                    if linear:
-                        item = linear.get('item')
-                        media_id = item['playbackSpec']['videoId']
+                year = ''
+                prod = item.get('yearProduction')
+                if prod:
+                    year = prod.get('readable')
 
-                    rental = play.get('rental')
-                    if rental:
-                        for item in rental:
-                            media_id = item['item']['playbackSpec']['videoId']
-
-                    subscription = play.get('subscription')
-                    if subscription:
-                        for item in subscription:
-                            media_id = item['item']['playbackSpec']['videoId']
-
-                images = media.get('images')
+                images = item.get('images')
                 if images:
                     card_2x3 = images.get('showcard2x3')
                     if card_2x3:
@@ -715,19 +885,15 @@ def vod_movies(genre_id):
                     card_16x9 = images.get('showcard16x9')
                     if card_16x9:
                         src = card_16x9['source']
-                        img = unquote(src)
+                        icon = unquote(src)
 
                 ext = localized(30027)
                 context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-                xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
-                add_item(label=title, url='vod', mode='play', media_id=media_id, icon=img, poster=poster, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=label, url='vod', mode='play', media_id=media_id, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
-
-def vod_series(genre_id):
-    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
 
 def search():
     xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
@@ -972,7 +1138,7 @@ def live_channel(exlink):
         plot = ''
         genre = ''
         lang = ''
-        img = ''
+        poster = ''
 
         media = program.get('media')
         if media:
@@ -1002,15 +1168,19 @@ def live_channel(exlink):
             images = media.get('images')
             if images:
                 card_2x3 = images.get('showcard2x3')
-                card = images.get('showcard16x9')
-                if card:
-                    src = card['source']
-                    img = unquote(src)
+                if card_2x3:
+                    src = card_2x3['source']
+                    poster = unquote(src)
+
+                card_16x9 = images.get('showcard16x9')
+                if card_16x9:
+                    src = card_16x9['source']
+                    icon = unquote(src)
 
         ext = localized(30027)
         context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-        add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, icon=img, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, fanart=fanart, context_menu=context_menu, item_count=count)
+        add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -1235,16 +1405,21 @@ def router(param):
             video_on_demand()
 
         elif mode == 'vod_genre_movies':
-            vod_genre_movies()
+            movies = 'movies'
+            vod_genre(movies)
 
         elif mode == 'vod_genre_series':
-            vod_genre_series()
+            series = 'series'
+            vod_genre(series)
 
-        elif mode == 'vod_movies':
-            vod_movies(exlink)
+        elif mode == 'vod':
+            vod(exlink)
 
-        elif mode == 'vod_series':
-            vod_series(exlink)
+        elif mode == 'seasons':
+            vod_seasons(exid)
+
+        elif mode == 'episodes':
+            vod_episodes(exlink, exid)
 
         elif mode == 'search':
             search()
