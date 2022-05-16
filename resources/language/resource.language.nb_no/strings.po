@@ -171,3 +171,7 @@ msgstr "Programsøk	"
 msgctxt "#30038"
 msgid "Favourites"
 msgstr "Favoritter"
+
+msgctxt "#30039"
+msgid "Sport"
+msgstr "Sport"

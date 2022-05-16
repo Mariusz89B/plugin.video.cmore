@@ -85,13 +85,20 @@ localized = xbmcaddon.Addon().getLocalizedString
 x_localized = xbmc.getLocalizedString
 
 path = addon.getAddonInfo('path')
-resources = path + '/resources/'
+resources = os.path.join(path, 'resources')
+icons = os.path.join(resources, 'icons')
 
 thumb = path + 'icon.png'
 poster = path + 'icon.png'
 banner = path + 'icon.png'
 fanart = resources + 'fanart.jpg'
 icon = path + 'icon.png'
+
+tv_icon = os.path.join(icons, 'tv.png')
+vod_icon = os.path.join(icons, 'vod.png')
+sport_icon = os.path.join(icons, 'sport.png')
+fav_icon = os.path.join(icons, 'fav.png')
+search_icon = os.path.join(icons, 'search.png')
 
 login = addon.getSetting('cmore_username').strip()
 password = addon.getSetting('cmore_password').strip()
@@ -282,18 +289,19 @@ def login_service():
                 pass
 
             create_data()
+            profile = profiles()
 
-        login, profile = login_data(reconnect=False)
+        login = login_data(reconnect=False)
 
         if login:
             run = Threading()
 
-        return login, profile
+        return login
 
     except Exception as ex:
         print('login_service exception: {}'.format(ex))
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
-    return False, None
+    return False
 
 def login_data(reconnect, retry=0):
     dashjs, tv_client_boot_id, timestamp, sessionid = create_data()
@@ -403,14 +411,14 @@ def login_data(reconnect, retry=0):
                 login_service(reconnect=True, retry=retry)
             else:
                 xbmcgui.Dialog().notification(localized(30012), localized(30007))
-                return False, None
+                return False
 
         j_response = response.json()
 
         try:
             if 'Username/password was incorrect' in j_response['errorMessage']:
                 xbmcgui.Dialog().notification(localized(30012), localized(30007))
-                return False, None
+                return False
         except:
             pass
 
@@ -461,7 +469,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False, None
+                    return False
 
             elif response['errorCode'] == 9030:
                 print('errorCode 9030')
@@ -472,7 +480,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False, None
+                    return False
 
             elif response['errorCode'] == 61002:
                 print('errorCode 61002')
@@ -483,7 +491,7 @@ def login_data(reconnect, retry=0):
                 if reconnect:
                     login_service(reconnect=True)
                 else:
-                    return False, None
+                    return False
 
         except:
             pass
@@ -511,7 +519,7 @@ def login_data(reconnect, retry=0):
             if reconnect:
                 login_service(reconnect=True)
             else:
-                return False, None
+                return False
 
         response = response.json()
 
@@ -521,35 +529,12 @@ def login_data(reconnect, retry=0):
         subtoken = response['config']['subscriberToken']
         addon.setSetting('cmore_subtoken', str(subtoken))
 
-        url = 'https://engagementgateway-cmore.clientapi-prod.live.tv.telia.net/engagementgateway/rest/secure/v2/engagementinfo'
-
-        headers = {
-            'authority': 'engagementgateway-cmore.clientapi-prod.live.tv.telia.net',
-            'accept': '*/*',
-            'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
-            'authorization': 'Bearer ' + beartoken,
-            'dnt': '1',
-            'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-            'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
-            'tv-client-boot-id': tv_client_boot_id,
-            'user-agent': UA,
-            'x-country': ca[country],
-        }
-
-        response = requests.get(url, headers=headers)
-
-        if response:
-            j_response = response.json()
-            profile = j_response['firstName']
-        else:
-            profile = 'N/A'
-
-        return True, profile
+        return True
 
     except Exception as ex:
         print('login_data exception: {}'.format(ex))
 
-    return False, None
+    return False
 
 def video_on_demand():
     add_item(label=localized(30030), url='', mode='vod_genre_movies', icon=icon, fanart=fanart, folder=True, playable=False)
@@ -983,7 +968,7 @@ def search(query):
             get_items(data)
 
 def live_channels():
-    login, profile = login_service()
+    login = login_service()
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
         return
@@ -1176,7 +1161,7 @@ def live_channel(exlink):
           "\nfragment episode on Episode{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n  playback\n{\nplay{\nsubscription {\nitem{\nid \naudioLang{\nname} \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} ")
         )
 
-    response = requests.get(url, headers=headers, params=params, verify=False).json()
+    response = send_req(url, headers=headers, params=params, verify=False).json()
 
     if response.get('errors', ''):
         return None, None
@@ -1416,6 +1401,9 @@ def get_stream(exlink, catchup_type):
 
     return None, None
 
+def sports():
+    pass
+
 def favourites():
     xbmc.executebuiltin("ActivateWindow(10134)")
 
@@ -1465,17 +1453,88 @@ def play(exlink, title, media_id, catchup_type, start, end):
         xbmcplugin.setResolvedUrl(addon_handle, True, listitem=play_item)
 
 def home():
-    login, profile = login_service()
+    profile_name = addon.getSetting('cmore_profile_name')
+    profile_avatar = addon.getSetting('cmore_profile_avatar')
+    if profile_name == '':
+        profile_name = 'C More'
+        profile_avatar = icon
+
+    login = login_service()
+
     if login:
-        add_item(label=localized(30009).format(profile), url='', mode='logged', icon=icon, fanart=fanart, folder=False, playable=False)
-        add_item(label=localized(30010), url='', mode='channels', icon=icon, fanart=fanart, folder=True, playable=False)
-        add_item(label=localized(30011), url='', mode='video_on_demand', icon=icon, fanart=fanart, folder=True, playable=False)
-        add_item(label=localized(30038), url='', mode='favourites', icon=icon, fanart=fanart, folder=True, playable=False)
-        add_item(label=localized(30032), url='', mode='search', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
+        add_item(label=localized(30010), url='', mode='channels', icon=tv_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30011), url='', mode='video_on_demand', icon=vod_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30039), url='', mode='sports', icon=sport_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30038), url='', mode='favourites', icon=fav_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30032), url='', mode='search', icon=search_icon, fanart=fanart, folder=True, playable=False)
     else:
         add_item(label=localized(30008), url='', mode='login', icon=icon, fanart=fanart, folder=False, playable=False)
 
     xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
+
+def profiles():
+    profile = ''
+
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/graphql'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': base[country],
+        'referer': base[country]+'/',
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.39',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.0',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    params = {
+        "operationName": "getUserProfileInfo",
+        "query": "query getUserProfileInfo { user { name childLock { enabled pinCode } profiles { id alias ageGroup isCurrent avatar { __typename ...Avatar } theme { __typename ...Theme } } } }  fragment Avatar on Avatar { id head { sourceNonEncoded } body { sourceNonEncoded } }  fragment Theme on Theme { id topImageUrl topSquareImageUrl shadowImageUrl colors { primary secondary background panelTitle } }",
+        "variables": {}
+    }
+
+    response = send_req(url, params=params, headers=headers)
+
+    if response:
+        j_response = response.json()
+
+        profiles = []
+
+        for item in j_response['data']['user']['profiles']:
+            profile = item['alias']
+            avatar = item['avatar']['head']['sourceNonEncoded']
+            profiles.append((profile, avatar))
+
+        items = []
+        for item in profiles:
+
+            list_item = xbmcgui.ListItem(item[0])
+            list_item.setArt({ 'poster': str(item[1]), 'icon' : str(item[1]) })
+            items.append(list_item)
+
+        ret = xbmcgui.Dialog().select('Profile', list(items), useDetails=True)
+        if ret < 0:
+            return
+
+        profile = profiles[ret]
+
+    addon.setSetting('cmore_profile_name', profile[0])
+    addon.setSetting('cmore_profile_avatar', profile[-1])
 
 def router(param):
     args = dict(urlparse.parse_qsl(param))
@@ -1511,6 +1570,9 @@ def router(param):
         elif mode == 'episodes':
             vod_episodes(exlink, exid)
 
+        elif mode == 'sports':
+            sports()
+
         elif mode == 'favourites':
             favourites()
 
@@ -1523,6 +1585,10 @@ def router(param):
 
         elif mode == 'login':
             addon.openSettings()
+            xbmc.executebuiltin('Container.Refresh()')
+
+        elif mode == 'logged':
+            profiles()
             xbmc.executebuiltin('Container.Refresh()')
 
     else:

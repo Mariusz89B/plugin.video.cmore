@@ -171,3 +171,7 @@ msgstr ""
 msgctxt "#30038"
 msgid "Favourites"
 msgstr ""
+
+msgctxt "#30039"
+msgid "Sport"
+msgstr ""
