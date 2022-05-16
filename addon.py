@@ -864,6 +864,9 @@ def vod_episodes(season, season_id):
                 genre = item.get('genre')
                 sub_genre = item.get('subGenres')
 
+                icon = ''
+                poster = ''
+
                 age_rating = ''
                 age = item.get('ageRating')
                 if age:
@@ -1219,6 +1222,8 @@ def live_channel(exlink):
         plot = ''
         genre = ''
         lang = ''
+
+        icon =''
         poster = ''
 
         media = program.get('media')
