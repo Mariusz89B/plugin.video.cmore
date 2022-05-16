@@ -43,6 +43,7 @@
 #   This add-on is unoffical and is not endorsed or supported by C More Entertainment in any way. Any trademarks used belong to their owning companies and organisations.
 
 import sys
+import os
 
 import xbmc
 import xbmcaddon
@@ -640,107 +641,105 @@ def vod(genre_id):
     response = send_req(url, params=params, headers=headers)
     if response:
         j_response = response.json()
-
-        titles = set()
-        count = 0
-
-        for data in j_response['data']['page']['pagePanels']['items']:
-
-            media_content = data.get('mediaContent')
+        items = j_response['data']['page']['pagePanels']['items']
+        for item in items:
+            media_content = item.get('mediaContent')
             if media_content:
-                items = media_content['items']
-            else:
-                items = data
+                data = media_content['items']
+                get_items(data)
 
-            for item in items:
-                count += 1
+def get_items(j_data):
+    titles = set()
+    count = 0
 
-                media_type = 'MOVIE'
-                folder = False
-                playable = True
-                mode = 'play'
+    for item in j_data:
+        count += 1
 
-                media_id = ''
-                plot = ''
-                outline = ''
-                genre = ''
-                duration = ''
-                date = ''
-                age = ''
+        media_type = 'MOVIE'
+        folder = False
+        playable = True
+        mode = 'play'
 
-                try:
-                    media = item['media']
-                except:
-                    media = False
+        media_id = ''
+        plot = ''
+        outline = ''
+        genre = ''
+        duration = ''
+        date = ''
+        age = ''
 
-                if media:
-                    title = media.get('title')
-                    media_id = media.get('id')
-                    outline = media.get('description')
-                    plot = media.get('descriptionLong')
-                    if not plot:
-                        plot = outline
-                    genre = media.get('genre')
-                    year = media.get('yearProduction')
-                    if year:
-                        date = year['readable']
+        icon = ''
+        poster = ''
 
-                    age = media.get('ageRating')
-                    ratings = media.get('ratings')
+        media = item.get('media')
 
-                    if ratings:
-                        imdb = ratings.get('imdb')
-                        if imdb:
-                            rating = imdb['readableScore']
+        title = media.get('title')
+        media_id = media.get('id')
+        outline = media.get('description')
+        plot = media.get('descriptionLong')
+        if not plot:
+            plot = outline
+        genre = media.get('genre')
+        year = media.get('yearProduction')
+        if year:
+            date = year['readable']
 
-                    d = media.get('duration')
-                    if d:
-                        duration = d['seconds']
+        age = media.get('ageRating')
+        ratings = media.get('ratings')
 
-                    playback = media.get('playback')
-                    if playback:
-                        play = playback['play']
-                        linear = play.get('linear')
-                        if linear:
-                            item = linear.get('item')
-                            media_id = item['playbackSpec']['videoId']
+        if ratings:
+            imdb = ratings.get('imdb')
+            if imdb:
+                rating = imdb['readableScore']
 
-                        rental = play.get('rental')
-                        if rental:
-                            for item in rental:
-                                media_id = item['item']['playbackSpec']['videoId']
+        d = media.get('duration')
+        if d:
+            duration = d['seconds']
 
-                        subscription = play.get('subscription')
-                        if subscription:
-                            for item in subscription:
-                                media_id = item['item']['playbackSpec']['videoId']
+        playback = media.get('playback')
+        if playback:
+            play = playback['play']
+            linear = play.get('linear')
+            if linear:
+                item = linear.get('item')
+                media_id = item['playbackSpec']['videoId']
 
-                    media_type = media.get('mediaType')
-                    if media_type != 'MOVIE':
-                        folder = True
-                        playable = False
-                        mode = 'seasons'
+            rental = play.get('rental')
+            if rental:
+                for item in rental:
+                    media_id = item['item']['playbackSpec']['videoId']
 
-                    images = media.get('images')
-                    if images:
-                        card_2x3 = images.get('showcard2x3')
-                        if card_2x3:
-                            src = card_2x3['source']
-                            poster = unquote(src)
+            subscription = play.get('subscription')
+            if subscription:
+                for item in subscription:
+                    media_id = item['item']['playbackSpec']['videoId']
 
-                        card_16x9 = images.get('showcard16x9')
-                        if card_16x9:
-                            src = card_16x9['source']
-                            icon = unquote(src)
+        media_type = media.get('mediaType')
+        if media_type != 'MOVIE':
+            folder = True
+            playable = False
+            mode = 'seasons'
 
-                    ext = localized(30027)
-                    context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+        images = media.get('images')
+        if images:
+            card_2x3 = images.get('showcard2x3')
+            if card_2x3:
+                src = card_2x3['source']
+                poster = unquote(src)
 
-                    xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+            card_16x9 = images.get('showcard16x9')
+            if card_16x9:
+                src = card_16x9['source']
+                icon = unquote(src)
 
-                    if title not in titles:
-                        add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
-                        titles.add(title)
+        ext = localized(30027)
+        context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+
+        xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+
+        if title not in titles:
+            add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+            titles.add(title)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -895,8 +894,90 @@ def vod_episodes(season, season_id):
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
 
-def search():
-    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
+def vod_search():
+    file_name = os.path.join(profile_path, 'title_search.list')
+    f = xbmcvfs.File(file_name, 'rb')
+    searches = sorted(f.read().splitlines())
+    f.close()
+
+    actions = [localized(30035), localized(30036)] + searches
+
+    action = xbmcgui.Dialog().select(localized(30037), actions)
+    if action == -1:
+        return
+    elif action == 0:
+        pass
+    elif action == 1:
+        which = xbmcgui.Dialog().multiselect(localized(30036), searches)
+        if which is None:
+            return
+        else:
+            for item in reversed(which):
+                del searches[item]
+
+            f = xbmcvfs.File(file_name, 'wb')
+            f.write(bytearray('\n'.join(searches), 'utf-8'))
+            f.close()
+            return
+    else:
+        if searches:
+            title = searches[action - 2]
+
+    if action == 0:
+        search = xbmcgui.Dialog().input(localized(30032), type=xbmcgui.INPUT_ALPHANUM)
+
+    else:
+        search = title
+
+    if not search:
+        return
+
+    searches = (set([search] + searches))
+    f = xbmcvfs.File(file_name, 'wb')
+    f.write(bytearray('\n'.join(searches), 'utf-8'))
+    f.close()
+
+    return search
+
+def search(query):
+    if query:
+        beartoken = addon.getSetting('cmore_beartoken')
+        tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+        url = 'https://graphql-cmore.t6a.net/graphql'
+
+        headers = {
+            'authority': 'graphql-cmore.t6a.net',
+            'accept': '*/*',
+            'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+            'authorization': 'Bearer ' + beartoken,
+            'content-type': 'application/json',
+            'dnt': '1',
+            'origin': base[country],
+            'referer': base[country]+'/',
+            'tv-client-boot-id': tv_client_boot_id,
+            'tv-client-browser': 'Microsoft Edge',
+            'tv-client-browser-version': '101.0.1210.39',
+            'tv-client-name': 'web',
+            'tv-client-os-name': 'Windows',
+            'tv-client-os-version': 'NT 10.0',
+            'tv-client-tz': 'Europe/Stockholm',
+            'tv-client-version': '1.46.0',
+            'user-agent': UA,
+            'x-country': ca[country],
+        }
+
+        params = {
+            'operationName': 'search',
+            'variables': '{"q":"'+query+'","limit":99,"offset":0,"searchRentalsType":"ALL","includeUpcoming":true}',
+            'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"59918fcc414b36ce67f21e73393eeecea125db6c5089fd126b123c168433066d"}}',
+        }
+
+        response = send_req(url, params=params, headers=headers)
+        if response:
+            j_response = response.json()
+            data = j_response['data']['search2']['searchItems']
+            get_items(data)
 
 def live_channels():
     login, profile = login_service()
@@ -1330,6 +1411,9 @@ def get_stream(exlink, catchup_type):
 
     return None, None
 
+def favourites():
+    xbmc.executebuiltin("ActivateWindow(10134)")
+
 def play(exlink, title, media_id, catchup_type, start, end):
     if exlink != 'vod':
         now = int(time.time())
@@ -1381,7 +1465,8 @@ def home():
         add_item(label=localized(30009).format(profile), url='', mode='logged', icon=icon, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30010), url='', mode='channels', icon=icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30011), url='', mode='video_on_demand', icon=icon, fanart=fanart, folder=True, playable=False)
-        add_item(label='[COLOR grey]'+localized(30032)+'[/COLOR]', url='', mode='search', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30038), url='', mode='favourites', icon=icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30032), url='', mode='search', icon=icon, fanart=fanart, folder=True, playable=False)
     else:
         add_item(label=localized(30008), url='', mode='login', icon=icon, fanart=fanart, folder=False, playable=False)
 
@@ -1421,8 +1506,12 @@ def router(param):
         elif mode == 'episodes':
             vod_episodes(exlink, exid)
 
+        elif mode == 'favourites':
+            favourites()
+
         elif mode == 'search':
-            search()
+            query = vod_search()
+            search(query)
 
         elif mode == 'ext':
             c_ext_info()

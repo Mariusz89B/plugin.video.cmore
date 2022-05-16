@@ -155,3 +155,19 @@ msgstr "Sæson"
 msgctxt "#30034"
 msgid "Episode"
 msgstr "Episode"
+
+msgctxt "#30035"
+msgid "New search"
+msgstr "Ny søgning"
+
+msgctxt "#30036"
+msgid "Remove search"
+msgstr "Fjern søgning"
+
+msgctxt "#30037"
+msgid "Program search"
+msgstr "Programsøgning"
+
+msgctxt "#30038"
+msgid "Favourites"
+msgstr "Favoritter"
