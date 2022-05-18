@@ -175,3 +175,11 @@ msgstr "Favoritter"
 msgctxt "#30039"
 msgid "Sport"
 msgstr "Sport"
+
+msgctxt "#30040"
+msgid "Kids"
+msgstr "Barn"
+
+msgctxt "#30041"
+msgid "Select date"
+msgstr "Velg dato"

@@ -54,7 +54,7 @@ import xbmcvfs
 import urllib.parse as urlparse
 from urllib.parse import urlencode, quote_plus, quote, unquote
 
-from datetime import datetime, timedelta
+from datetime import *
 
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
@@ -97,6 +97,7 @@ icon = path + 'icon.png'
 tv_icon = os.path.join(icons, 'tv.png')
 vod_icon = os.path.join(icons, 'vod.png')
 sport_icon = os.path.join(icons, 'sport.png')
+kids_icon = os.path.join(icons, 'kids.png')
 fav_icon = os.path.join(icons, 'fav.png')
 search_icon = os.path.join(icons, 'search.png')
 
@@ -116,6 +117,18 @@ sess = requests.Session()
 timeouts = (5, 5)
 
 UA = xbmc.getUserAgent()
+
+class proxydt(datetime):
+    @staticmethod
+    def strptime(date_string, format):
+        import time
+        try:
+            res = datetime.strptime(date_string, format)
+        except:
+            res = datetime(*(time.strptime(date_string, format)[0:6]))
+        return res
+
+proxydt = proxydt
 
 class Threading(object):
     def __init__(self):
@@ -170,7 +183,7 @@ def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, st
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
-        url = build_url({'title': label, 'mode':mode, 'url':url, 'media_id':media_id, 'catchup':catchup, 'start':start, 'end':end, 'page':page, 'plot':plot, 'image':icon}),
+        url = build_url({'title': label, 'mode': mode, 'url': url, 'media_id': media_id, 'catchup': catchup, 'start': start, 'end': end, 'page': page, 'plot': plot, 'image': icon}),
         listitem=list_item,
         isFolder=folder)
 
@@ -321,28 +334,28 @@ def login_data(reconnect, retry=0):
         }
 
         data = {
-            "bootId":tv_client_boot_id,
-            "networkType":"UNKNOWN",
-            "deviceId":dashjs,
-            "deviceType":"WEB",
-            "model":"unknown_model",
-            "productName":"Microsoft Edge 101.0.1210.32",
-            "platformName":"Windows",
-            "platformVersion":"NT 10.0",
-            "nativeVersion":"unknown_platformVersion",
-            "uiName":"one-web-login",
-            "client":"WEB",
-            "uiVersion":"1.35.0",
-            "environment":"PROD",
-            "country":ca[country],
-            "brand":"CMORE",
-            "logType":"STATISTICS_HTTP",
-            "payloads": [{
-                    "sequence": 1,
-                    "timestamp": timestamp,
-                    "level": "ERROR",
-                    "loggerId": "telia-data-backend/System",
-                    "message": "Failed to get service status due to timeout after 1000 ms"
+            'bootId': tv_client_boot_id,
+            'networkType': 'UNKNOWN',
+            'deviceId': dashjs,
+            'deviceType': 'WEB',
+            'model': 'unknown_model',
+            'productName': 'Microsoft Edge 101.0.1210.32',
+            'platformName': 'Windows',
+            'platformVersion': 'NT 10.0',
+            'nativeVersion': 'unknown_platformVersion',
+            'uiName': 'one-web-login',
+            'client': 'WEB',
+            'uiVersion': '1.35.0',
+            'environment': 'PROD',
+            'country': ca[country],
+            'brand': 'CMORE',
+            'logType': 'STATISTICS_HTTP',
+            'payloads': [{
+                'sequence': 1,
+                'timestamp': timestamp,
+                'level': 'ERROR',
+                'loggerId': 'telia-data-backend/System',
+                'message': 'Failed to get service status due to timeout after 1000 ms'
                 }]
             }
 
@@ -546,36 +559,30 @@ def vod_genre(genre):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
-    url = 'https://graphql-cmore.t6a.net/graphql'
+    url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-cmore.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': base[country],
-        'referer': base[country]+'/',
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.39',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.46.0',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
-    params = (
-        ('operationName', 'getSubPages'),
-        ('variables', '{"id":"'+genre+'"}'),
-        ('query', "\n    query getSubPages($id: String!) {\n  page(id: $id) {\n    id\n    subPages {\n      \nitems{ \nid \nname }    }\n  }\n}\n    ")
-    )
+    json = {
+        'operationName': 'getSubPages',
 
-    response = send_req(url, params=params, headers=headers)
+        'variables': {
+            'id': '{0}'.format(genre),
+        },
+
+        'query': 'query getSubPages($id: String!) { page(id: $id) { id subPages { items{ id name } } } }'
+        }
+
+    response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
 
@@ -593,138 +600,147 @@ def vod(genre_id):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
-    url = 'https://graphql-cmore.t6a.net/graphql'
+    url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-cmore.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': base[country],
-        'referer': base[country]+'/',
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.39',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.46.0',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
-    params = (
-        ('operationName', 'getPage'),
-        ('variables', '{"id":"'+genre_id+'","limit":10,"offset":0}'),
-        ('extensions', '{"persistedQuery":{"version":1,"sha256Hash":"d1db0ba11b041b669f2bced269e2ffa1d608f93cd0132e12ca8210f9879f4685"}}',)
-        #('query', "\n    query getPage($id: String!, $limit: Int, $offset: Int) {\n  page(id: $id) {\n    id\n    pagePanels(limit: $limit, offset: $offset) {\n      id\n      items {\n        id\n title\n mediaContent { id\n }     }\n      pageInfo {\n        totalCount\n        hasNextPage\n        nextPageOffset\n      }\n    }\n    subPages {\n      items { id\n }    }\n  }\n}\n    \n")
-    )
+    json = {
+        'operationName': 'getCommonBrowsePage',
+        'variables': {
+            'mediaContentLimit': 16,
+            'pageId': genre_id
+        },
 
-    response = send_req(url, params=params, headers=headers)
+        'query': 'query getCommonBrowsePage($pageId: String!, $mediaContentLimit: Int!) { page(id: $pageId) { id pagePanels { items { __typename title id ...MobileShowcasePanel ...MobileMediaPanel ...MobileSelectionMediaPanel ...MobileSingleFeaturePanel ...MobileStoresPanel } } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment Store on Store { name icons { dark { sourceNonEncoded } } }  fragment MobileShowcaseMovie on Movie { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment MobileShowcaseEpisode on Episode { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } series { id } store { __typename ...Store } }  fragment MobileShowcaseSeries on Series { id title userData { favorite } images { backdrop16x9 { sourceNonEncoded } } webview { url } suggestedEpisode { id playback { __typename ...Playback } } store { __typename ...Store } }  fragment MobileShowcaseSportEvent on SportEvent { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment ChannelPlayback on ChannelPlayback { play { playbackSpec { __typename ...PlaybackSpec } } buy { subscriptions { item { id } } } }  fragment MobileShowcaseChannel on Channel { channelPlayback: playback { __typename ...ChannelPlayback } }  fragment MobileShowcasePanel on ShowcasePanel { id title showcaseContent { items { id showcaseTitle { text } kicker images { showcase16x9 { sourceNonEncoded } showcase16x7 { sourceNonEncoded } showcase7x10 { sourceNonEncoded } showcase2x3 { sourceNonEncoded } } promotion { link { id type } content { __typename ...MobileShowcaseMovie ...MobileShowcaseEpisode ...MobileShowcaseSeries ...MobileShowcaseSportEvent ...MobileShowcaseChannel } } } } }  fragment MobilePageMovie on Movie { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } ageRating { number } duration { readableShort } ratings { imdb { readableScore } } productionCountries userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } availability { from { text } } availableNow labels { premiereAnnouncement { text } } }  fragment MobilePageSeries on Series { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } description genre ageRating { number } ratings { imdb { readableScore } } label webview { url } isRentalSeries }  fragment MobilePageEpisode on Episode { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } episodeNumber { number readable } seasonNumber { number readable } playback { __typename ...Playback } series { id title } ageRating { number } duration { readableShort } userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } }  fragment MobilePageSportEvent on SportEvent { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } availability { from { text timestamp } } descriptionLong genre badges { uhd { text } } productionCountries ageRating { number } duration { readableShort } store { name } league labels { airtime { text } } yearProduction { number } userData { progress { percent position } } venue }  fragment MobilePageMediaPanelContent on MediaPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on Episode { __typename ...MobilePageEpisode } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileMediaPanel on MediaPanel { id title kicker displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } mediaContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } }  fragment MobileSelectionMediaPanel on SelectionMediaPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } selectionMediaContent(config: { limit: $mediaContentLimit } ) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } link { id type } }  fragment MobileSingleFeaturePanelMedia on SingleFeaturePanelMedia { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileSingleFeaturePanel on SingleFeaturePanel { id title subtitle images { __typename ... on SingleFeaturePanelImages { promo16x9 { sourceNonEncoded } } } media { __typename ...MobileSingleFeaturePanelMedia } }  fragment MobilePageStore on Store { id __typename name icons { light { sourceNonEncoded } dark { sourceNonEncoded } } }  fragment MobileStoresPanel on StoresPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } storesContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { __typename ...MobilePageStore } } }'
+    }
+
+    response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        items = j_response['data']['page']['pagePanels']['items']
-        for item in items:
-            media_content = item.get('mediaContent')
-            if media_content:
-                data = media_content['items']
-                get_items(data)
+        data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
+        get_items(data)
 
-def get_items(j_data):
+def get_items(data, lst=True):
     titles = set()
     count = 0
 
-    for item in j_data:
-        count += 1
-
-        media_type = 'MOVIE'
-        folder = False
-        playable = True
-        mode = 'play'
-
-        media_id = ''
-        plot = ''
-        outline = ''
-        genre = ''
-        duration = ''
-        date = ''
-        age = ''
-
-        icon = ''
-        poster = ''
-
+    for item in data:
         media = item.get('media')
+        if media:
+            typename = media.get('__typename')
+            folder = False
+            playable = True
 
-        title = media.get('title')
-        media_id = media.get('id')
-        outline = media.get('description')
-        plot = media.get('descriptionLong')
-        if not plot:
-            plot = outline
-        genre = media.get('genre')
-        year = media.get('yearProduction')
-        if year:
-            date = year['readable']
+            if typename == 'Movie':
+                mode = 'play'
 
-        age = media.get('ageRating')
-        ratings = media.get('ratings')
+            elif typename == 'Series':
+                mode = 'seasons'
+                folder = True
+                playable = False
 
-        if ratings:
-            imdb = ratings.get('imdb')
-            if imdb:
-                rating = imdb['readableScore']
+            elif typename == 'SportEvent':
+                mode = 'play'
 
-        d = media.get('duration')
-        if d:
-            duration = d['seconds']
+            title = media.get('title')
+            media_id = media.get('id')
+            genre = media.get('genre')
 
-        playback = media.get('playback')
-        if playback:
-            play = playback['play']
-            linear = play.get('linear')
-            if linear:
-                item = linear.get('item')
-                media_id = item['playbackSpec']['videoId']
+            availability = media.get('availability')
+            if availability:
+                start = availability
+                if start:
+                    fr = start.get('from')
+                    if fr:
+                        timestamp = fr.get('timestamp')
+                        if isinstance(timestamp, int):
+                            start_time = timestamp // 1000
 
-            rental = play.get('rental')
-            if rental:
-                for item in rental:
-                    media_id = item['item']['playbackSpec']['videoId']
+                            dt_start = datetime.fromtimestamp(start_time)
+                            da_start = dt_start.strftime('%H:%M')
 
-            subscription = play.get('subscription')
-            if subscription:
-                for item in subscription:
-                    media_id = item['item']['playbackSpec']['videoId']
+                            title = title + ' [COLOR grey](' + da_start + ')[/COLOR]'
 
-        media_type = media.get('mediaType')
-        if media_type != 'MOVIE':
-            folder = True
-            playable = False
-            mode = 'seasons'
+            outline = media.get('description')
+            plot = media.get('descriptionLong')
+            if not plot:
+                plot = outline
 
-        images = media.get('images')
-        if images:
-            card_2x3 = images.get('showcard2x3')
-            if card_2x3:
-                src = card_2x3['source']
-                poster = unquote(src)
+            date = ''
+            year = media.get('yearProduction')
+            if year:
+                date = year.get('readable')
 
-            card_16x9 = images.get('showcard16x9')
-            if card_16x9:
-                src = card_16x9['source']
-                icon = unquote(src)
+            age = media.get('ageRating')
 
-        ext = localized(30027)
-        context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+            rating = ''
+            ratings = media.get('ratings')
+            if ratings:
+                imdb = ratings.get('imdb')
+                if imdb:
+                    rating = imdb.get('readableScore')
 
-        xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+            duration = ''
+            d = media.get('duration')
+            if d:
+                duration = d.get('seconds')
 
-        if title not in titles:
-            add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
-            titles.add(title)
+            media_id = media.get('id')
+            playback = media.get('playback')
+            if playback:
+                play = playback.get('play')
+                linear = play.get('linear')
+                if linear:
+                    item = linear.get('item')
+                    media_id = item['playbackSpec']['videoId']
+
+                rental = play.get('rental')
+                if rental:
+                    for item in rental:
+                        media_id = item['item']['playbackSpec']['videoId']
+
+                subscription = play.get('subscription')
+                if subscription:
+                    for item in subscription:
+                        media_id = item['item']['playbackSpec']['videoId']
+
+            images = media.get('images')
+            if images:
+                poster = ''
+                card_2x3 = images.get('showcard2x3')
+                if card_2x3:
+                    src = card_2x3.get('sourceNonEncoded')
+                    if not src:
+                        src = card_2x3.get('source')
+                    if src:
+                        poster = unquote(src)
+
+                icon = ''
+                card_16x9 = images.get('showcard16x9')
+                if card_16x9:
+                    src = card_16x9.get('sourceNonEncoded')
+                    if not src:
+                        src = card_16x9.get('source')
+                    if src:
+                        icon = unquote(src)
+
+            ext = localized(30027)
+            context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
+
+            xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+
+            if title not in titles:
+                add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                titles.add(title)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -733,57 +749,55 @@ def vod_seasons(media_id):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
-    url = 'https://graphql-cmore.t6a.net/graphql'
+    url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-cmore.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': base[country],
-        'referer': base[country]+'/',
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.39',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.46.0',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
-    params = {
-    'operationName': 'getSeries',
-    'variables': '{"id":"'+media_id+'"}',
-    'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"6d6726a4674427f605492639073647bb23d99c944bf49da55c6733e354ae430e"}}',
+    json = {
+        'operationName': 'getMobileSeries',
+
+        'variables': {
+            'id': media_id
+        },
+
+        'query': 'query getMobileSeries($id: String!) { series(id: $id) { __typename ...MobileSeriesDetailsItem } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobileSuggestedEpisode on Episode { id title descriptionLong seasonNumber { number } availability { to { text } } directors actors vignette { hero16x9 { mpeg4 { url } webm { url } } } episodeNumber { number } playback { __typename ...Playback } userData { progress { position percent } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } duration { readableShort } price { readable } images { showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } }  fragment MobileUpcomingEpisode on UpcomingEpisode { id title episodeNumber { number } seasonNumber { readable } availability { from { text } } availability { from { text } } images { backdrop16x9 { sourceNonEncoded } } duration { readableShort } }  fragment MobileSeriesDetailsItem on Series { id title images { backdrop16x9 { sourceNonEncoded } } genre ageRating { readable number } ratings { imdb { readableScore url } } description actors userData { favorite } suggestedEpisode { __typename ...MobileSuggestedEpisode } label numberOfEpisodes { number } numberOfSeasons { number } vignette { hero16x9 { mpeg4 { url } webm { url } } } store { name } seasonLinks { items { id numberOfEpisodes { number readable } seasonNumber { number readable } } } upcomingEpisode { __typename ...MobileUpcomingEpisode } isRentalSeries }'
     }
 
-    response = send_req(url, params=params, headers=headers)
+    response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-
-        seasons = j_response['data']['series']['suggestedEpisode']['series']['seasonLinks']['items']
+        seasons = j_response['data']['series']['seasonLinks']['items']
 
         for item in seasons:
             season_id = item['id']
 
-            params = {
-                'operationName': 'getSeason',
-                'variables': '{"seasonId":"'+season_id+'","limit":50,"offset":0}',
-                'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"bf4af75b6a97b3a2db09bc5f04a329c64349c82f6e8a8a3a379b066e96fa36a1"}}',
+            json = {
+                'operationName': 'GetMobileSeason',
+
+                'variables': {
+                    'id': season_id,
+                    'limit': 300,
+                    'offset': 0
+                },
+
+                'query': 'query GetMobileSeason($id: String!, $limit: Int!, $offset: Int!) { season(seasonId: $id) { seasonNumber { readable number } id episodes(limit: $limit, offset: $offset) { __typename ...MobileSeasonEpisode } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobileSeasonEpisode on Episodes { episodeItems { id title descriptionLong genre duration { seconds readableShort } images { showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } availability { from { text timestamp } to { text } } downloadAvailable seasonNumber { number } episodeNumber { number readable } price { readable } playback { __typename ...Playback } userData { progress { position percent } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } } }'
             }
 
-            response = send_req(url, params=params, headers=headers)
+            response = send_req(url, post=True, json=json, headers=headers)
             if response:
                 j_response = response.json()
-
                 season = j_response['data']['season']['seasonNumber']['number']
-                label = localized(30033) + ' ' + str(season)
 
+                label = localized(30033) + ' ' + str(season)
                 add_item(label=label, url=season, mode='episodes', media_id=season_id, playable=False, folder=True, icon=icon, fanart=fanart)
 
     xbmcplugin.endOfDirectory(addon_handle)
@@ -792,39 +806,34 @@ def vod_episodes(season, season_id):
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
-    url = 'https://graphql-cmore.t6a.net/graphql'
+    url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-cmore.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': base[country],
-        'referer': base[country]+'/',
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.39',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.46.0',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
-    params = {
-        'operationName': 'getSeason',
-        'variables': '{"seasonId":"'+season_id+'","limit":50,"offset":0}',
-        'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"bf4af75b6a97b3a2db09bc5f04a329c64349c82f6e8a8a3a379b066e96fa36a1"}}',
+    json = {
+        'operationName': 'GetMobileSeason',
+
+        'variables': {
+            'id': season_id,
+            'limit': 300,
+            'offset': 0
+        },
+
+        'query': 'query GetMobileSeason($id: String!, $limit: Int!, $offset: Int!) { season(seasonId: $id) { seasonNumber { readable number } id episodes(limit: $limit, offset: $offset) { __typename ...MobileSeasonEpisode } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobileSeasonEpisode on Episodes { episodeItems { id title descriptionLong genre duration { seconds readableShort } images { showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } availability { from { text timestamp } to { text } } downloadAvailable seasonNumber { number readable } episodeNumber { number readable } price { readable } playback { __typename ...Playback } userData { progress { position percent } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } } }'
     }
 
-    response = send_req(url, params=params, headers=headers)
+    response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-
         items = j_response['data']['season']['episodes']['episodeItems']
 
         count = 0
@@ -832,16 +841,21 @@ def vod_episodes(season, season_id):
         for item in items:
             count += 1
 
-            season_ = item['seasonNumber']['number']
+            season_num = item['seasonNumber']['number']
 
-            if int(season) == int(season_):
-                title = item['title']
-                media_id = item['id']
+            if int(season) == int(season_num):
+                title = item.get('title')
+                media_id = item.get('id')
 
-                episode_r = item['episodeNumber']['readable']
-                season_r = item['seasonNumber']['readable']
+                episode_raw = item.get('episodeNumber')
+                if episode_raw:
+                    episode_read = episode_raw['readable']
 
-                label = episode_r
+                season_raw = item.get('seasonNumber')
+                if season_raw:
+                    season_read = season_raw['readable']
+
+                label = episode_read
 
                 plot = item.get('descriptionLong')
                 directors = item.get('directors')
@@ -849,30 +863,35 @@ def vod_episodes(season, season_id):
                 genre = item.get('genre')
                 sub_genre = item.get('subGenres')
 
-                icon = ''
-                poster = ''
+                age = ''
+                age_rating = item.get('ageRating')
+                if age_rating:
+                    age = age_rating.get('readable')
 
-                age_rating = ''
-                age = item.get('ageRating')
-                if age:
-                    age_rating = age.get('readable')
-
-                year = ''
-                prod = item.get('yearProduction')
-                if prod:
-                    year = prod.get('readable')
+                date = ''
+                year = item.get('yearProduction')
+                if year:
+                    date = year.get('readable')
 
                 images = item.get('images')
                 if images:
+                    poster = ''
                     card_2x3 = images.get('showcard2x3')
                     if card_2x3:
-                        src = card_2x3['source']
-                        poster = unquote(src)
+                        src = card_2x3.get('sourceNonEncoded')
+                        if not src:
+                            src = card_2x3.get('source')
+                        if src:
+                            poster = unquote(src)
 
+                    icon = ''
                     card_16x9 = images.get('showcard16x9')
                     if card_16x9:
-                        src = card_16x9['source']
-                        icon = unquote(src)
+                        src = card_16x9.get('sourceNonEncoded')
+                        if not src:
+                            src = card_16x9.get('source')
+                        if src:
+                            icon = unquote(src)
 
                 ext = localized(30027)
                 context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
@@ -932,36 +951,37 @@ def search(query):
         beartoken = addon.getSetting('cmore_beartoken')
         tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
 
-        url = 'https://graphql-cmore.t6a.net/graphql'
+        url = 'https://graphql-cmore.t6a.net/'
 
         headers = {
-            'authority': 'graphql-cmore.t6a.net',
-            'accept': '*/*',
-            'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
             'authorization': 'Bearer ' + beartoken,
-            'content-type': 'application/json',
-            'dnt': '1',
-            'origin': base[country],
-            'referer': base[country]+'/',
+            'tv-client-name': 'androidmob',
+            'tv-client-version': '4.7.0',
             'tv-client-boot-id': tv_client_boot_id,
-            'tv-client-browser': 'Microsoft Edge',
-            'tv-client-browser-version': '101.0.1210.39',
-            'tv-client-name': 'web',
-            'tv-client-os-name': 'Windows',
-            'tv-client-os-version': 'NT 10.0',
-            'tv-client-tz': 'Europe/Stockholm',
-            'tv-client-version': '1.46.0',
-            'user-agent': UA,
             'x-country': ca[country],
+            'content-type': 'application/json',
+            'accept-encoding': 'gzip',
+            'user-agent': 'okhttp/4.9.3',
         }
 
-        params = {
-            'operationName': 'search',
-            'variables': '{"q":"'+query+'","limit":99,"offset":0,"searchRentalsType":"ALL","includeUpcoming":true}',
-            'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"59918fcc414b36ce67f21e73393eeecea125db6c5089fd126b123c168433066d"}}',
+        json = {
+            'operationName': 'mobileSearch',
+
+            'variables': {
+                'query': '{0}'.format(query),
+                'limit': 100,
+                'channel': 'NONE',
+                'rentals': 'ALL',
+                'subscription': 'ALL',
+                'includeUpcoming': True,
+                'includeLinear': True
+            },
+
+            'query': 'query mobileSearch($query: String!, $limit: Int!, $channel: SearchSubscriptionType, $rentals: SearchRentalsType, $subscription: SearchSubscriptionType, $includeUpcoming: Boolean!, $includeLinear: Boolean!) { search2(input: { limit: $limit q: $query includeUpcoming: $includeUpcoming includeLinear: $includeLinear searchType: { channel: $channel rentals: $rentals subscription: $subscription }  } ) { searchItems { media { __typename ... on Movie { __typename ...MobileMovieSearchItem } ... on Series { __typename ...MobileSeriesSearchItem } ... on SportEvent { __typename ...MobileSportEventSearchItem } } } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobileMovieSearchItem on Movie { id title descriptionLong images { showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } genre yearProduction { readable } userData { progress { position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } playback { __typename ...Playback } price { readable } availableNow labels { premiereAnnouncement { text } } }  fragment MobileSeriesSearchItem on Series { id title description images { showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } genre webview { url } isRentalSeries label }  fragment MobileSportEventSearchItem on SportEvent { id title descriptionLong images { showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } homeTeamLogo { sourceNonEncoded } awayTeamLogo { sourceNonEncoded } } availability { from { isoString } } league labels { airtime { text } } }'
         }
 
-        response = send_req(url, params=params, headers=headers)
+        response = send_req(url, post=True, json=json, headers=headers)
+
         if response:
             j_response = response.json()
             data = j_response['data']['search2']['searchItems']
@@ -972,8 +992,6 @@ def live_channels():
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
         return
-
-    #check_login()
 
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
@@ -1023,7 +1041,7 @@ def live_channels():
         except KeyError as k:
             print('errorMessage: {k}'.format(k=str(k)))
 
-        url = 'https://graphql-cmore.t6a.net/graphql'
+        url = 'https://graphql-cmore.t6a.net/'
 
         headers = {
             'authority': 'graphql-cmore.t6a.net',
@@ -1046,14 +1064,18 @@ def live_channels():
             'x-country': ca[country],
         }
 
-        params = (
-            ('operationName', 'getTvChannels'),
-            ('variables', '{"limit":500,"offset":0}'),
-            ('query', "\n    query getTvChannels($limit: Int!, $offset: Int!) {\n  channels(limit: $limit, offset: $offset) {\n    pageInfo {\n      totalCount\n      hasNextPage\n    }\n    channelItems {\n      id\n      name\n      \nicons {dark\n{source\n}}   }\n  }\n}\n    \n")
-        )
+        json = {
+            'operationName': 'getTvChannels',
 
-        response = send_req(url, headers=headers, params=params, verify=False)
+            'variables': {
+                'limit': 500,
+                'offset': 0
+            },
 
+            'query': 'query getTvChannels($limit: Int!, $offset: Int!) { channels(limit: $limit, offset: $offset) { pageInfo { totalCount hasNextPage } channelItems { id\n name\n icons { dark { source } } }   } }'
+        }
+
+        response = send_req(url, post=True, json=json, headers=headers)
         if not response:
             xbmcgui.Dialog().notification(localized(30012), localized(30006))
             return
@@ -1124,49 +1146,39 @@ def live_channel(exlink):
 
     timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
 
-    url = 'https://graphql-cmore.t6a.net/graphql'
+    url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-telia.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': base[country],
-        'referer': base[country]+'/',
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.39',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.45.1',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
-    params = (
-        ('operationName', 'getTvChannel'),
-        ('variables', '{"timestamp":'+timestamp+',"offset":0,"id":"'+str(exlink)+'"}'),
-        ('query', "\n query getTvChannel($timestamp: Timestamp!, $limit: Int, $offset: Int!, $id: String!) {\n"
-          "channel(id: $id) {\n id\n  name\n  icons {\n    dark {\n      source\n    }\n }\n  playback {\n play "
-          "{\n playbackSpec {\n videoId\n videoIdType\n watchMode\n accessControl\n      }\n    }\n  }"
-          "recordAndWatch\n       programs(timestamp: $timestamp, limit: $limit, offset: $offset) {\n  id\n"
-          "programItems {\n id \n title\n startTime{timestamp}\n endTime{timestamp}\n live\n rerun\n __typename\n"
-          "media{\n ...sport \n ...movie \n ...episode}    }\n}}}\n"
-          "\nfragment sport on SportEvent{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
-          "\nfragment movie on Movie{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n playback\n{\nplay{\nsubscription {\nitem{\nid \naudioLang{\nname} \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} "
-          "\nfragment episode on Episode{id\n title\n descriptionLong\n images{\nshowcard16x9{\nsource}}\n  playback\n{\nplay{\nsubscription {\nitem{\nid \naudioLang{\nname} \nvalidFrom{\ntimestamp} \nvalidTo{\ntimestamp} \nplaybackSpec{\nvideoId \nvideoIdType \nwatchMode \naccessControl \n__typename}\n__typename }} }}\n genre\n mediaType\n __typename\n} ")
-        )
+    json = {
+        'operationName': 'GetChannel',
 
-    response = send_req(url, headers=headers, params=params, verify=False).json()
+        'variables': {
+            'channelId': '{0}'.format(str(exlink)),
+            'programLimit': 100,
+            'timestamp': int(timestamp)
+        },
 
-    if response.get('errors', ''):
+        'query': 'query GetChannel($channelId: String!, $timestamp: Timestamp, $programLimit: Int) {\n  channel(id: $channelId) {\n    ...ChannelItem\n    __typename\n  }\n}\n\nfragment ChannelItem on Channel {\n  id\n  name\n  recordAndWatch\n  playback {\n    play {\n      playbackSpec {\n        ...PlaybackSpec\n        __typename\n      }\n      __typename\n    }\n    buy {\n      ...GraphQLChannelPlaybackBuyFragment\n      __typename\n    }\n    __typename\n  }\n  icons {\n    light {\n      sourceNonEncoded\n      __typename\n    }\n    dark {\n      sourceNonEncoded\n      __typename\n    }\n    __typename\n  }\n  programs(timestamp: $timestamp, limit: $programLimit) {\n    programItems {\n      ...ProgramItem\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment PlaybackSpec on PlaybackSpec {\n  accessControl\n  videoId\n  videoIdType\n  watchMode\n  __typename\n}\n\nfragment GraphQLChannelPlaybackBuyFragment on ChannelPlaybackBuy {\n  subscriptions {\n    item {\n      ...GraphQLSubscriptionProductStandardFragment\n      ...GraphQLSubscriptionProductIAPFragment\n      ...GraphQLSubscriptionProductTVEFragment\n      ...GraphQLSubscriptionProductDualEntry\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment GraphQLSubscriptionProductStandardFragment on SubscriptionProductStandard {\n  id\n  name\n  uniqueSellingPoints {\n    ...GraphQLSubscriptionProductUniqueSellingPoint\n    __typename\n  }\n  gqlPrice: price {\n    readable\n    __typename\n  }\n  __typename\n}\n\nfragment GraphQLSubscriptionProductUniqueSellingPoint on SubscriptionProductUniqueSellingPoint {\n  sellingPoint\n  __typename\n}\n\nfragment GraphQLSubscriptionProductIAPFragment on SubscriptionProductIAP {\n  id\n  name\n  iTunesConnectId\n  uniqueSellingPoints {\n    ...GraphQLSubscriptionProductUniqueSellingPoint\n    __typename\n  }\n  __typename\n}\n\nfragment GraphQLSubscriptionProductTVEFragment on SubscriptionProductTVE {\n  id\n  name\n  __typename\n}\n\nfragment GraphQLSubscriptionProductDualEntry on SubscriptionProductDualEntry {\n  id\n  name\n  __typename\n}\n\nfragment ProgramItem on Program {\n  live\n  id\n  startTime {\n    timestamp\n    isoString\n    __typename\n  }\n  endTime {\n    timestamp\n    isoString\n    __typename\n  }\n  title\n  media {\n    ... on Movie {\n      ...MovieProgram\n      __typename\n    }\n    ... on Episode {\n      ...EpisodeProgram\n      __typename\n    }\n    ... on SportEvent {\n      ...SportProgram\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment MovieProgram on Movie {\n  id\n genre\n images {\n    showcard16x9 {\n      sourceNonEncoded\n      __typename\n    }\n    showcard2x3 {\n      sourceNonEncoded\n      __typename\n    }\n    __typename\n  }\n  mediaType\n  title\n  availableNow\n  availability {\n    from {\n      timestamp\n      __typename\n    }\n    to {\n      timestamp\n      __typename\n    }\n    __typename\n  }\n  descriptionLong\n  playback {\n    ...PlaybackItem\n    buy {\n      ...GraphQLPlaybackBuyFragment\n      ...BuyItem\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment PlaybackItem on Playback {\n  play {\n    linear {\n      ...Linear\n      __typename\n    }\n    subscription {\n      item {\n        validFrom {\n          timestamp\n          __typename\n        }\n        validTo {\n          timestamp\n          __typename\n        }\n        playbackSpec {\n          ...PlaybackSpec\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    npvr {\n      item {\n        validFrom {\n          timestamp\n          __typename\n        }\n        validTo {\n          timestamp\n          __typename\n        }\n        playbackSpec {\n          ...PlaybackSpec\n          __typename\n        }\n        __typename\n      }\n      live {\n        playbackSpec {\n          ...PlaybackSpec\n          __typename\n        }\n        __typename\n      }\n      startover {\n        playbackSpec {\n          ...PlaybackSpec\n          __typename\n        }\n        __typename\n      }\n      npvrInfo {\n        series {\n          active\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment Linear on PlaybackPlayLinear {\n  item {\n    isLive\n    startover {\n      playbackSpec {\n        ...PlaybackSpec\n        __typename\n      }\n      __typename\n    }\n    playbackSpec {\n      ...PlaybackSpec\n      __typename\n    }\n    startTime {\n      timestamp\n      readableDistance(type: FUZZY)\n      __typename\n    }\n    endTime {\n      timestamp\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment GraphQLPlaybackBuyFragment on PlaybackBuy {\n  subscriptions {\n    item {\n      ...GraphQLSubscriptionProductStandardFragment\n      ...GraphQLSubscriptionProductIAPFragment\n      ...GraphQLSubscriptionProductTVEFragment\n      ...GraphQLSubscriptionProductDualEntry\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment BuyItem on PlaybackBuy {\n  subscription {\n    item {\n      validFrom {\n        timestamp\n        __typename\n      }\n      validTo {\n        timestamp\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  npvr {\n    item {\n      validFrom {\n        timestamp\n        __typename\n      }\n      validTo {\n        timestamp\n        __typename\n      }\n      playbackSpec {\n        ...PlaybackSpec\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment EpisodeProgram on Episode {\n  id\n  genre\n images {\n    showcard16x9 {\n      sourceNonEncoded\n      __typename\n    }\n    showcard2x3 {\n      sourceNonEncoded\n      __typename\n    }\n    __typename\n  }\n  availableNow\n  availability {\n    from {\n      timestamp\n      __typename\n    }\n    to {\n      timestamp\n      __typename\n    }\n    __typename\n  }\n  title\n  descriptionLong\n  series {\n    id\n    title\n    isRecordable\n    userData {\n      npvrInfo {\n        active\n        episodes {\n          ongoing\n          recorded\n          scheduled\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  playback {\n    ...PlaybackItem\n    buy {\n      ...GraphQLPlaybackBuyFragment\n      ...BuyItem\n      __typename\n    }\n    __typename\n  }\n  episodeNumber {\n    readable\n    __typename\n  }\n  seasonNumber {\n    readable\n    __typename\n  }\n  __typename\n}\n\nfragment SportProgram on SportEvent {\n  id\n  title\n  availableNow\n  availability {\n    from {\n      timestamp\n      __typename\n    }\n    to {\n      timestamp\n      __typename\n    }\n    __typename\n  }\n  playback {\n    ...PlaybackItem\n    buy {\n      ...GraphQLPlaybackBuyFragment\n      ...BuyItem\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n'
+    }
+
+    response = send_req(url, post=True, json=json, headers=headers)
+    if response:
+        j_response = response.json()
+
+    if j_response.get('errors', ''):
         return None, None
 
-    program_items = response['data']['channel']['programs']['programItems']
+    program_items = j_response['data']['channel']['programs']['programItems']
 
     count = 0
 
@@ -1190,6 +1202,11 @@ def live_channel(exlink):
         date = st_start + ' - ' + st_end
 
         title = program['title']
+        org_title = title
+
+        if len(title) > 50:
+            title = title[:50]
+
         if int(now) >= int(start) and int(now) <= int(end):
             name_ = title + '[B][COLOR violet] ● [/COLOR][/B]'
 
@@ -1203,63 +1220,62 @@ def live_channel(exlink):
 
         catchup = 'LIVE'
 
-        media_id = ''
-        plot = ''
-        genre = ''
-        lang = ''
-
-        icon =''
-        poster = ''
-
         media = program.get('media')
-        if media:
-            media_id = media['id'] 
-            plot = media['descriptionLong']
-            genre = media['genre']
 
-            audio_lang = media.get('audioLang') 
-            if audio_lang:
-                lang = audio_lang.get('name')
+        media_id = media.get('id')
+        plot = media.get('descriptionLong')
+        genre = media.get('genre')
 
-            playback = media.get('playback')
+        lang = ''
+        audio_lang = media.get('audioLang')
+        if audio_lang:
+            lang = audio_lang.get('name')
 
-            if playback:
-                play = playback.get('play')
-                if play:
-                    subscription = play.get('subscription')
-                    if subscription:
-                        for item in subscription:
-                            if item:
-                                items = item.get('item')
-                                if items:
-                                    playback_spec = items.get('playbackSpec')
-                                    if playback_spec:
-                                        catchup = playback_spec.get('watchMode')
+        catchup = ''
+        playback = media.get('playback')
+        if playback:
+            play = playback.get('play')
+            if play:
+                subscription = play.get('subscription')
+                if subscription:
+                    for item in subscription:
+                        if item:
+                            items = item.get('item')
+                            if items:
+                                playback_spec = items.get('playbackSpec')
+                                if playback_spec:
+                                    catchup = playback_spec.get('watchMode')
 
-            images = media.get('images')
-            if images:
-                card_2x3 = images.get('showcard2x3')
-                if card_2x3:
-                    src = card_2x3['source']
+        images = media.get('images')
+        if images:
+            poster = ''
+            card_2x3 = images.get('showcard2x3')
+            if card_2x3:
+                src = card_2x3.get('sourceNonEncoded')
+                if not src:
+                    src = card_2x3.get('source')
+                if src:
                     poster = unquote(src)
 
-                card_16x9 = images.get('showcard16x9')
-                if card_16x9:
-                    src = card_16x9['source']
+            icon = ''
+            card_16x9 = images.get('showcard16x9')
+            if card_16x9:
+                src = card_16x9.get('sourceNonEncoded')
+                if not src:
+                    src = card_16x9.get('source')
+                if src:
                     icon = unquote(src)
 
         ext = localized(30027)
         context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-        add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+        add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, folder=False, playable=True, info_labels={'title':title, 'originaltitle':org_title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
 
 def get_stream(exlink, catchup_type):
     stream_url = None
-
-    #check_login()
 
     dashjs = addon.getSetting('cmore_devush')
     beartoken = addon.getSetting('cmore_beartoken')
@@ -1294,27 +1310,29 @@ def get_stream(exlink, catchup_type):
             )
 
             data = {
-                "sessionId": sessionid,
-                "whiteLabelBrand":"CMORE",
-                "watchMode":catchup_type,
-                "accessControl":"SUBSCRIPTION",
-                "device": {
-                    "deviceId": tv_client_boot_id,
-                    "category":"desktop_windows",
-                    "packagings":["DASH_MP4_CTR"],
-                    "drmType":"WIDEVINE",
-                    "capabilities":[],
-                    "screen": {
-                        "height":1080,
-                        "width":1920
-                        },
-                        "os":"Windows",
-                        "model":"windows_desktop"
-                        },
-                        "preferences": {
-                            "audioLanguage":["undefined"],
-                            "accessibility":[]}
+                'sessionId': sessionid,
+                'whiteLabelBrand': 'CMORE',
+                'watchMode': catchup_type,
+                'accessControl': 'SUBSCRIPTION',
+                'device': {
+                    'deviceId': tv_client_boot_id,
+                    'category': 'desktop_windows',
+                    'packagings': ['DASH_MP4_CTR'],
+                    'drmType': 'WIDEVINE',
+                    'capabilities': [],
+                    'screen': {
+                        'height': 1080,
+                        'width': 1920
+                    },
+                    'os': 'Windows',
+                    'model': 'windows_desktop'
+                },
+
+                'preferences': {
+                    'audioLanguage': ['undefined'],
+                    'accessibility': []
                 }
+            }
 
         else:
             stream_type = 'MEDIA'
@@ -1341,34 +1359,34 @@ def get_stream(exlink, catchup_type):
             )
 
             data = {
-                "sessionId": six.text_type(uuid.uuid4()),
-                "whiteLabelBrand":"CMORE",
-                "watchMode": catchup_type,
-                "accessControl":"SUBSCRIPTION",
-                "device": {
-                    "deviceId": tv_client_boot_id,
-                    "category":"desktop_windows",
-                    "packagings":["DASH_MP4_CTR"],
-                    "drmType":"WIDEVINE",
-                    "capabilities":[],
-                    "screen": {
-                        "height":1080,
-                        "width":1920
-                        },
-                    
-                    "os":"Windows",
-                    "model":"windows_desktop"
+                'sessionId': six.text_type(uuid.uuid4()),
+                'whiteLabelBrand': 'CMORE',
+                'watchMode': catchup_type,
+                'accessControl': 'SUBSCRIPTION',
+                'device': {
+                    'deviceId': tv_client_boot_id,
+                    'category': 'desktop_windows',
+                    'packagings': ['DASH_MP4_CTR'],
+                    'drmType': 'WIDEVINE',
+                    'capabilities': [],
+                    'screen': {
+                        'height': 1080,
+                        'width': 1920
                     },
+                    'os': 'Windows',
+                    'model': 'windows_desktop'
+                },
 
-                    "preferences": {
-                        "audioLanguage":[],
-                        "accessibility":[]}
+                'preferences': {
+                    'audioLanguage': [],
+                    'accessibility': []
                 }
+            }
 
         response = send_req(url, post=True, headers=headers, json=data, params=params, verify=True, timeout=timeouts)
         if not response:
             xbmcgui.Dialog().notification(localized(30012), localized(30006))
-            return None 
+            return None
 
         response = response.json()
 
@@ -1402,7 +1420,61 @@ def get_stream(exlink, catchup_type):
     return None, None
 
 def sports():
-    pass
+    beartoken          = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
+
+    n = datetime.now()
+    now = int(time.mktime(n.timetuple())) * 1000
+
+    timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
+
+    res = xbmcgui.Dialog().input(localized(30041), type=xbmcgui.INPUT_DATE)
+    if res:
+        date_str = '/'.join(i.zfill(2) for i in res.replace(' ', '').split('/'))
+        dt_obj = proxydt.strptime(date_str, '%d/%m/%Y')
+        date_time = dt_obj.strftime('%Y-%m-%d')
+
+        url = 'https://graphql-cmore.t6a.net/'
+
+        headers = {
+            'authorization': 'Bearer ' + beartoken,
+            'tv-client-name': 'androidmob',
+            'tv-client-version': '4.7.0',
+            'tv-client-boot-id': tv_client_boot_id,
+            'x-country': ca[country],
+            'content-type': 'application/json',
+            'accept-encoding': 'gzip',
+            'user-agent': 'okhttp/4.9.3',
+        }
+
+        json = {
+            'operationName': 'GetMobileSportTableau',
+
+            'variables': {
+                'sportEventListInput': {
+                    'date': '{0}'.format(date_time),
+                    'genres': [],
+                    'onlyInSubscription': True
+                }
+            },
+
+            'query': 'query GetMobileSportTableau($sportEventListInput: SportEventListInput!) { sportEventList(input: $sportEventListInput) { dates { __typename ...MobileSportEventDate } content { genres { __typename ...MobileSportEventFilter } sections { __typename ...MobileSportEventListSection } } } }  fragment MobileSportEventDate on SportEventDate { label date }  fragment MobileSportEventFilter on SportGenre { label value count }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobilePageMovie on Movie { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } ageRating { number } duration { readableShort } ratings { imdb { readableScore } } productionCountries userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } availability { from { text } } availableNow labels { premiereAnnouncement { text } } }  fragment MobilePageSeries on Series { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } description genre ageRating { number } ratings { imdb { readableScore } } label webview { url } isRentalSeries }  fragment MobilePageSportEvent on SportEvent { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } availability { from { text timestamp } } descriptionLong genre badges { uhd { text } } productionCountries ageRating { number } duration { readableShort } store { name } league labels { airtime { text } } yearProduction { number } userData { progress { percent position } } venue }  fragment MobileSportEventListSectionItem on SportEventListSectionItem { startTime { timestamp } endTime { timestamp } media { __typename ...MobilePageMovie ...MobilePageSeries ...MobilePageSportEvent } }  fragment MobileSportEventListSection on SportEventListSection { title items { __typename ...MobileSportEventListSectionItem } }'
+        }
+
+        response = send_req(url, post=True, json=json, headers=headers)
+        if response:
+            j_response = response.json()
+
+            error = j_response.get('errors')
+            if error:
+                xbmcgui.Dialog().notification(localized(30012), error[0]['message'])
+                return
+
+            data = j_response['data']['sportEventList']['content']['sections'][0]['items']
+            get_items(data)
+
+def kids():
+    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
 
 def favourites():
     xbmc.executebuiltin("ActivateWindow(10134)")
@@ -1466,6 +1538,7 @@ def home():
         add_item(label=localized(30010), url='', mode='channels', icon=tv_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30011), url='', mode='video_on_demand', icon=vod_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30039), url='', mode='sports', icon=sport_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30038), url='', mode='favourites', icon=fav_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30032), url='', mode='search', icon=search_icon, fanart=fanart, folder=True, playable=False)
     else:
@@ -1503,13 +1576,14 @@ def profiles():
     }
 
     params = {
-        "operationName": "getUserProfileInfo",
-        "query": "query getUserProfileInfo { user { name childLock { enabled pinCode } profiles { id alias ageGroup isCurrent avatar { __typename ...Avatar } theme { __typename ...Theme } } } }  fragment Avatar on Avatar { id head { sourceNonEncoded } body { sourceNonEncoded } }  fragment Theme on Theme { id topImageUrl topSquareImageUrl shadowImageUrl colors { primary secondary background panelTitle } }",
-        "variables": {}
+        'operationName': 'getUserProfileInfo',
+
+        'variables': {},
+
+        'query': 'query getUserProfileInfo { user { name childLock { enabled pinCode } profiles { id alias ageGroup isCurrent avatar { __typename ...Avatar } theme { __typename ...Theme } } } }  fragment Avatar on Avatar { id head { sourceNonEncoded } body { sourceNonEncoded } }  fragment Theme on Theme { id topImageUrl topSquareImageUrl shadowImageUrl colors { primary secondary background panelTitle } }'
     }
 
     response = send_req(url, params=params, headers=headers)
-
     if response:
         j_response = response.json()
 
@@ -1524,7 +1598,7 @@ def profiles():
         for item in profiles:
 
             list_item = xbmcgui.ListItem(item[0])
-            list_item.setArt({ 'poster': str(item[1]), 'icon' : str(item[1]) })
+            list_item.setArt({'poster': str(item[1]), 'icon': str(item[1])})
             items.append(list_item)
 
         ret = xbmcgui.Dialog().select('Profile', list(items), useDetails=True)
@@ -1572,6 +1646,9 @@ def router(param):
 
         elif mode == 'sports':
             sports()
+
+        elif mode == 'kids':
+            kids()
 
         elif mode == 'favourites':
             favourites()
