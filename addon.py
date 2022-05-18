@@ -668,7 +668,8 @@ def get_items(data, lst=True):
                             dt_start = datetime.fromtimestamp(start_time)
                             da_start = dt_start.strftime('%H:%M')
 
-                            title = title + ' [COLOR grey](' + da_start + ')[/COLOR]'
+                            if da_start != '00:00':
+                                title = title + ' [COLOR grey](' + da_start + ')[/COLOR]'
 
             outline = media.get('description')
             plot = media.get('descriptionLong')
@@ -1474,7 +1475,54 @@ def sports():
             get_items(data)
 
 def kids():
-    xbmcgui.Dialog().notification(localized(30012), 'Work in progress')
+    beartoken = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
+
+    url = 'https://graphql-cmore.t6a.net/'
+
+    headers = {
+        'authority': 'graphql-cmore.t6a.net',
+        'accept': '*/*',
+        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
+        'authorization': 'Bearer ' + beartoken,
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
+        'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+        'tv-client-boot-id': tv_client_boot_id,
+        'tv-client-browser': 'Microsoft Edge',
+        'tv-client-browser-version': '101.0.1210.47',
+        'tv-client-name': 'web',
+        'tv-client-os-name': 'Windows',
+        'tv-client-os-version': 'NT 10.0',
+        'tv-client-tz': 'Europe/Stockholm',
+        'tv-client-version': '1.46.4',
+        'user-agent': UA,
+        'x-country': ca[country],
+    }
+
+    json = {
+        'operationName': 'getPage',
+
+        'variables': {
+            'id': 'kids',
+            'limit': 10,
+            'offset': 0
+        },
+
+        'extensions': {
+            'persistedQuery': {
+                'version': 1,
+                'sha256Hash': 'd1db0ba11b041b669f2bced269e2ffa1d608f93cd0132e12ca8210f9879f4685'
+            }
+        },
+    }
+
+    response = send_req(url, post=True, json=json, headers=headers)
+    if response:
+        j_response = response.json()
+        data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
+        get_items(data)
 
 def favourites():
     xbmc.executebuiltin("ActivateWindow(10134)")
