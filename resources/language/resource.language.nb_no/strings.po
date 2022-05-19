@@ -183,3 +183,23 @@ msgstr "Barn"
 msgctxt "#30041"
 msgid "Select date"
 msgstr "Velg dato"
+
+msgctxt "#30042"
+msgid "Exit childmode"
+msgstr "Avslutt barnemodus"
+
+msgctxt "#30043"
+msgid "Would you like to exit child mode?"
+msgstr "Vil du avslutte barnemodus?"
+
+msgctxt "#30044"
+msgid "Enter PIN-code"
+msgstr "Skriv inn PIN-kode"
+
+msgctxt "#30045"
+msgid "Wrong PIN-code"
+msgstr "Feil PIN-kode"
+
+msgctxt "#30046"
+msgid "PIN-code"
+msgstr "PIN-kode"

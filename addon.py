@@ -59,6 +59,7 @@ from datetime import *
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 
+import base64
 import re
 import time
 import threading
@@ -90,7 +91,8 @@ icons = os.path.join(resources, 'icons')
 
 thumb = path + 'icon.png'
 poster = path + 'icon.png'
-banner = path + 'icon.png'
+banner = path + 'banner.jpg'
+clearlogo = path + 'clearlogo.png'
 fanart = resources + 'fanart.jpg'
 icon = path + 'icon.png'
 
@@ -100,6 +102,7 @@ sport_icon = os.path.join(icons, 'sport.png')
 kids_icon = os.path.join(icons, 'kids.png')
 fav_icon = os.path.join(icons, 'fav.png')
 search_icon = os.path.join(icons, 'search.png')
+lock_icon = os.path.join(icons, 'lock.png')
 
 login = addon.getSetting('cmore_username').strip()
 password = addon.getSetting('cmore_password').strip()
@@ -157,7 +160,7 @@ class Threading(object):
 def build_url(query):
     return base_url + '?' + urlencode(query)
 
-def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
+def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, start=None, end=None, thumb=None, poster=None, banner=None, clearlogo=None, icon=None, fanart=None, plot=None, context_menu=None, item_count=None, info_labels=False, page=0):
     list_item = xbmcgui.ListItem(label=label)
 
     if playable:
@@ -178,8 +181,9 @@ def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, st
     thumb = thumb if thumb else icon
     poster = poster if poster else icon
     banner = banner if banner else icon
+    clearlogo = clearlogo if clearlogo else icon
 
-    list_item.setArt({'thumb': thumb, 'poster': poster, 'banner': banner, 'fanart': fanart})
+    list_item.setArt({'thumb': thumb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'clearlogo': clearlogo})
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
@@ -1091,8 +1095,8 @@ def live_channels():
 
                 count += 1
 
-                exlink = channel["id"]
-                name = channel["name"]
+                exlink = channel['id']
+                name = channel['name']
 
                 try:
                     res = channel["resolutions"]
@@ -1481,41 +1485,24 @@ def kids():
     url = 'https://graphql-cmore.t6a.net/'
 
     headers = {
-        'authority': 'graphql-cmore.t6a.net',
-        'accept': '*/*',
-        'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
         'authorization': 'Bearer ' + beartoken,
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-        'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
         'tv-client-boot-id': tv_client_boot_id,
-        'tv-client-browser': 'Microsoft Edge',
-        'tv-client-browser-version': '101.0.1210.47',
-        'tv-client-name': 'web',
-        'tv-client-os-name': 'Windows',
-        'tv-client-os-version': 'NT 10.0',
-        'tv-client-tz': 'Europe/Stockholm',
-        'tv-client-version': '1.46.4',
-        'user-agent': UA,
         'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
     }
 
     json = {
-        'operationName': 'getPage',
-
+        'operationName': 'getCommonBrowsePage',
         'variables': {
-            'id': 'kids',
-            'limit': 10,
-            'offset': 0
+            'mediaContentLimit': 50,
+            'pageId': 'kids'
         },
 
-        'extensions': {
-            'persistedQuery': {
-                'version': 1,
-                'sha256Hash': 'd1db0ba11b041b669f2bced269e2ffa1d608f93cd0132e12ca8210f9879f4685'
-            }
-        },
+        'query': 'query getCommonBrowsePage($pageId: String!, $mediaContentLimit: Int!) { page(id: $pageId) { id pagePanels { items { __typename title id ...MobileShowcasePanel ...MobileMediaPanel ...MobileSelectionMediaPanel ...MobileSingleFeaturePanel ...MobileStoresPanel } } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment Store on Store { name icons { dark { sourceNonEncoded } } }  fragment MobileShowcaseMovie on Movie { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment MobileShowcaseEpisode on Episode { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } series { id } store { __typename ...Store } }  fragment MobileShowcaseSeries on Series { id title userData { favorite } images { backdrop16x9 { sourceNonEncoded } } webview { url } suggestedEpisode { id playback { __typename ...Playback } } store { __typename ...Store } }  fragment MobileShowcaseSportEvent on SportEvent { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment ChannelPlayback on ChannelPlayback { play { playbackSpec { __typename ...PlaybackSpec } } buy { subscriptions { item { id } } } }  fragment MobileShowcaseChannel on Channel { channelPlayback: playback { __typename ...ChannelPlayback } }  fragment MobileShowcasePanel on ShowcasePanel { id title showcaseContent { items { id showcaseTitle { text } kicker images { showcase16x9 { sourceNonEncoded } showcase16x7 { sourceNonEncoded } showcase7x10 { sourceNonEncoded } showcase2x3 { sourceNonEncoded } } promotion { link { id type } content { __typename ...MobileShowcaseMovie ...MobileShowcaseEpisode ...MobileShowcaseSeries ...MobileShowcaseSportEvent ...MobileShowcaseChannel } } } } }  fragment MobilePageMovie on Movie { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } ageRating { number } duration { readableShort } ratings { imdb { readableScore } } productionCountries userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } availability { from { text } } availableNow labels { premiereAnnouncement { text } } }  fragment MobilePageSeries on Series { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } description genre ageRating { number } ratings { imdb { readableScore } } label webview { url } isRentalSeries }  fragment MobilePageEpisode on Episode { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } episodeNumber { number readable } seasonNumber { number readable } playback { __typename ...Playback } series { id title } ageRating { number } duration { readableShort } userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } }  fragment MobilePageSportEvent on SportEvent { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } availability { from { text timestamp } } descriptionLong genre badges { uhd { text } } productionCountries ageRating { number } duration { readableShort } store { name } league labels { airtime { text } } yearProduction { number } userData { progress { percent position } } venue }  fragment MobilePageMediaPanelContent on MediaPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on Episode { __typename ...MobilePageEpisode } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileMediaPanel on MediaPanel { id title kicker displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } mediaContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } }  fragment MobileSelectionMediaPanel on SelectionMediaPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } selectionMediaContent(config: { limit: $mediaContentLimit } ) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } link { id type } }  fragment MobileSingleFeaturePanelMedia on SingleFeaturePanelMedia { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileSingleFeaturePanel on SingleFeaturePanel { id title subtitle images { __typename ... on SingleFeaturePanelImages { promo16x9 { sourceNonEncoded } } } media { __typename ...MobileSingleFeaturePanelMedia } }  fragment MobilePageStore on Store { id __typename name icons { light { sourceNonEncoded } dark { sourceNonEncoded } } }  fragment MobileStoresPanel on StoresPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } storesContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { __typename ...MobilePageStore } } }'
     }
 
     response = send_req(url, post=True, json=json, headers=headers)
@@ -1572,7 +1559,26 @@ def play(exlink, title, media_id, catchup_type, start, end):
 
         xbmcplugin.setResolvedUrl(addon_handle, True, listitem=play_item)
 
+def pincode():
+    pin_code_base = addon.getSetting('cmore_pincode')
+    pin_code = base64.b64decode(pin_code_base).decode('utf-8')
+
+    res = xbmcgui.Dialog().yesno(localized(30012), localized(30043))
+    if res:
+        input_ = xbmcgui.Dialog().input(localized(30044), type=xbmcgui.INPUT_ALPHANUM, option=xbmcgui.ALPHANUM_HIDE_INPUT)
+        if input_ == pin_code and input_ != '':
+            addon.setSetting('cmore_childlock', 'false')
+        else:
+            addon.setSetting('cmore_childlock', 'true')
+            xbmcgui.Dialog().notification(localized(30012), localized(30045))
+
 def home():
+    get_childmode = addon.getSetting('cmore_childlock')
+    if get_childmode == 'true':
+        childmode = True
+    else:
+        childmode = False
+
     profile_name = addon.getSetting('cmore_profile_name')
     profile_avatar = addon.getSetting('cmore_profile_avatar')
     if profile_name == '':
@@ -1581,7 +1587,7 @@ def home():
 
     login = login_service()
 
-    if login:
+    if login and not childmode:
         add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30010), url='', mode='channels', icon=tv_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30011), url='', mode='video_on_demand', icon=vod_icon, fanart=fanart, folder=True, playable=False)
@@ -1589,6 +1595,12 @@ def home():
         add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30038), url='', mode='favourites', icon=fav_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30032), url='', mode='search', icon=search_icon, fanart=fanart, folder=True, playable=False)
+
+    elif login and childmode:
+        add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
+        add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30042), url='', mode='pincode', icon=lock_icon, fanart=fanart, folder=False, playable=False)
+
     else:
         add_item(label=localized(30008), url='', mode='login', icon=icon, fanart=fanart, folder=False, playable=False)
 
@@ -1634,10 +1646,26 @@ def profiles():
     response = send_req(url, params=params, headers=headers)
     if response:
         j_response = response.json()
+        data = j_response['data']['user']
+
+        child_lock = data.get('childLock')
+        if child_lock:
+            lock = child_lock.get('enabled')
+            addon.setSetting('cmore_childlock', str(lock).lower())
+
+            pin_code = child_lock.get('pinCode')
+            if pin_code:
+                addon.setSetting('cmore_pincode', base64.b64encode(pin_code.encode('utf-8')))
+
+            pin_code_base = addon.getSetting('cmore_pincode')
+            pin_code_ = base64.b64decode(pin_code_base).decode('utf-8')
+
+            if pin_code == pin_code_ and pin_code_ != '':
+                addon.setSetting('cmore_childlock', 'false')
 
         profiles = []
 
-        for item in j_response['data']['user']['profiles']:
+        for item in data['profiles']:
             profile = item['alias']
             avatar = item['avatar']['head']['sourceNonEncoded']
             profiles.append((profile, avatar))
@@ -1714,6 +1742,10 @@ def router(param):
 
         elif mode == 'logged':
             profiles()
+            xbmc.executebuiltin('Container.Refresh()')
+
+        elif mode == 'pincode':
+            pincode()
             xbmc.executebuiltin('Container.Refresh()')
 
     else:

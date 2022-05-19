@@ -183,3 +183,23 @@ msgstr ""
 msgctxt "#30041"
 msgid "Select date"
 msgstr ""
+
+msgctxt "#30042"
+msgid "Exit childmode"
+msgstr ""
+
+msgctxt "#30043"
+msgid "Would you like to exit child mode?"
+msgstr ""
+
+msgctxt "#30044"
+msgid "Enter PIN-code"
+msgstr ""
+
+msgctxt "#30045"
+msgid "Wrong PIN-code"
+msgstr ""
+
+msgctxt "#30046"
+msgid "PIN-code"
+msgstr ""
