@@ -211,3 +211,11 @@ msgstr ""
 msgctxt "#30048"
 msgid "Content not available"
 msgstr ""
+
+msgctxt "#30049"
+msgid "Table"
+msgstr ""
+
+msgctxt "#30050"
+msgid "Upcoming"
+msgstr ""

@@ -636,7 +636,7 @@ def vod(genre_id):
             xbmcgui.Dialog().notification(localized(30012), localized(30048))
             return
 
-def get_items(data, lst=True):
+def get_items(data):
     titles = set()
     count = 0
 
@@ -1435,6 +1435,12 @@ def get_stream(exlink, catchup_type):
 
     return None, None
 
+def sports_page():
+    add_item(label='Tablå', url='', mode='sports_table', icon=icon, fanart=fanart, folder=True, playable=False)
+    add_item(label='Kommande', url='', mode='sports_upcoming', icon=icon, fanart=fanart, folder=True, playable=False)
+
+    xbmcplugin.endOfDirectory(addon_handle)
+
 def sports():
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
@@ -1492,6 +1498,52 @@ def sports():
             except:
                 xbmcgui.Dialog().notification(localized(30012), localized(30048))
                 return
+
+def sports_upcoming():
+    beartoken          = addon.getSetting('cmore_beartoken')
+    tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
+
+    n = datetime.now()
+    now = int(time.mktime(n.timetuple())) * 1000
+
+    timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
+
+    url = 'https://graphql-cmore.t6a.net/'
+
+    headers = {
+        'authorization': 'Bearer ' + beartoken,
+        'tv-client-name': 'androidmob',
+        'tv-client-version': '4.7.0',
+        'tv-client-boot-id': tv_client_boot_id,
+        'x-country': ca[country],
+        'content-type': 'application/json',
+        'accept-encoding': 'gzip',
+        'user-agent': 'okhttp/4.9.3',
+    }
+
+    json = {
+        'operationName': 'getMobilePage',
+
+        'variables': {
+            'channelsLimit': 16,
+            'mediaContentLimit': 16,
+            'pageId': 'sports/upcoming',
+            'timestamp': timestamp
+        },
+
+        'query': 'query getMobilePage($pageId: String!, $timestamp: Timestamp!, $channelsLimit: Int!, $mediaContentLimit: Int!) { page(id: $pageId) { id pagePanels(limit: 60) { items { __typename title id ...MobileSelectionMediaPanel ...MobileMediaPanel ...MobileStoresPanel ...MobileRentalsPanel ...MobileTimelinePanel ...MobileShowcasePanel ...MobileContinueWatchingPanel ...MobileMyListPanel ...MobileChannelsPanel ...MobileSingleFeaturePanel ...MobilePageLinkPanel } } } }  fragment PlaybackSpec on PlaybackSpec { accessControl videoId videoIdType watchMode }  fragment Vod on Vod { audioLang { name code } playbackSpec { __typename ...PlaybackSpec } price { readable } validFrom { timestamp readableDistance(type: FUZZY) } validTo { timestamp } }  fragment Linear on PlaybackPlayLinear { item { startover { playbackSpec { __typename ...PlaybackSpec } } playbackSpec { __typename ...PlaybackSpec } startTime { timestamp readableDistance(type: FUZZY) } endTime { timestamp } } }  fragment Rental on PlaybackPlayVodRental { item { __typename ...Vod } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) msTo } } }  fragment Recording on PlaybackPlayRecording { item { playbackSpec { __typename ...PlaybackSpec } audioLang { name code } validFrom { timestamp } validTo { timestamp } } startover { playbackSpec { __typename ...PlaybackSpec } } }  fragment SubscriptionProductStandard on SubscriptionProductStandard { id price { readable } }  fragment SubscriptionProductDualEntry on SubscriptionProductDualEntry { id }  fragment SubscriptionProductTVE on SubscriptionProductTVE { id }  fragment SubscriptionProductFallback on SubscriptionProductFallback { id }  fragment Playback on Playback { play { subscription { item { __typename ...Vod } } linear { __typename ...Linear } rental { __typename ...Rental } npvr { __typename ...Recording } } buy { subscriptions { item { __typename id name ...SubscriptionProductStandard ...SubscriptionProductDualEntry ...SubscriptionProductTVE ...SubscriptionProductFallback } } rental { item { price { readable } validFrom { timestamp } validTo { timestamp } } } npvr { __typename } } }  fragment MobilePageMovie on Movie { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } ageRating { number } duration { readableShort } ratings { imdb { readableScore } } productionCountries userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } availability { from { text } } availableNow labels { premiereAnnouncement { text } } }  fragment MobilePageSeries on Series { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } description genre ageRating { number } ratings { imdb { readableScore } } label webview { url } isRentalSeries }  fragment MobilePageEpisode on Episode { id title images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } screenshot16x9 { sourceNonEncoded } } descriptionLong price { readable } genre yearProduction { number } episodeNumber { number readable } seasonNumber { number readable } playback { __typename ...Playback } series { id title } ageRating { number } duration { readableShort } userData { progress { percent position } rentalInfo { endTime { readableDistance(type: HOURS_OR_MINUTES) } } } store { name } }  fragment MobilePageSportEvent on SportEvent { id title playback { __typename ...Playback } images { backdrop16x9 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } showcard16x9 { sourceNonEncoded } } availability { from { text timestamp } } descriptionLong genre badges { uhd { text } } productionCountries ageRating { number } duration { readableShort } store { name } league labels { airtime { text } } yearProduction { number } userData { progress { percent position } } venue }  fragment MobilePageMediaPanelContent on MediaPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on Episode { __typename ...MobilePageEpisode } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileSelectionMediaPanel on SelectionMediaPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } selectionMediaContent(config: { limit: $mediaContentLimit } ) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } link { id type } }  fragment MobileMediaPanel on MediaPanel { id title kicker displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } mediaContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { media { __typename ...MobilePageMediaPanelContent } } } }  fragment MobilePageStore on Store { id __typename name icons { light { sourceNonEncoded } dark { sourceNonEncoded } } }  fragment MobileStoresPanel on StoresPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } storesContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { __typename ...MobilePageStore } } }  fragment MobileRentalsPanelItemContent on RentalsPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } }  fragment MobileRentalsPanel on RentalsPanel { id title rentalsContent(limit: $mediaContentLimit) { items { media { __typename ...MobileRentalsPanelItemContent } } } }  fragment MobileTimeLinePanelItemContent on TimelinePanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Episode { __typename ...MobilePageEpisode } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileTimelinePanel on TimelinePanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } timelineContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { media { __typename ...MobileTimeLinePanelItemContent } startTime { timestamp isoString } endTime { timestamp isoString } } } }  fragment Store on Store { name icons { dark { sourceNonEncoded } } }  fragment MobileShowcaseMovie on Movie { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment MobileShowcaseEpisode on Episode { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } series { id } store { __typename ...Store } }  fragment MobileShowcaseSeries on Series { id title userData { favorite } images { backdrop16x9 { sourceNonEncoded } } webview { url } suggestedEpisode { id playback { __typename ...Playback } } store { __typename ...Store } }  fragment MobileShowcaseSportEvent on SportEvent { id title userData { progress { position } favorite } images { backdrop16x9 { sourceNonEncoded } } playback { __typename ...Playback } store { __typename ...Store } }  fragment ChannelPlayback on ChannelPlayback { play { playbackSpec { __typename ...PlaybackSpec } } buy { subscriptions { item { id } } } }  fragment MobileShowcaseChannel on Channel { channelPlayback: playback { __typename ...ChannelPlayback } }  fragment MobileShowcasePanel on ShowcasePanel { id title showcaseContent { items { id showcaseTitle { text } kicker images { showcase16x9 { sourceNonEncoded } showcase16x7 { sourceNonEncoded } showcase7x10 { sourceNonEncoded } showcase2x3 { sourceNonEncoded } } promotion { link { id type } content { __typename ...MobileShowcaseMovie ...MobileShowcaseEpisode ...MobileShowcaseSeries ...MobileShowcaseSportEvent ...MobileShowcaseChannel } } } } }  fragment MobileContinueWatchingPanelItemContent on ContinueWatchingPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Episode { __typename ...MobilePageEpisode } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileContinueWatchingPanel on ContinueWatchingPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } continueWatchingContent { items { media { __typename ...MobileContinueWatchingPanelItemContent } } } }  fragment MobileMyListPanelItemContent on MyListPanelItemContent { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileMyListPanel on MyListPanel { id title displayHint { __typename ... on DisplayHintSwimlane { swimlaneSubType } } myListContent(limit: $mediaContentLimit) { pageInfo { hasNextPage } items { media { __typename ...MobileMyListPanelItemContent } } } }  fragment MobileChannelsPanel on ChannelsPanel { id title channels(limit: $channelsLimit) { pageInfo { hasNextPage } channelItems { id name userData { inEngagement } icons { dark { sourceNonEncoded } } playback { play { playbackSpec { __typename ...PlaybackSpec } } } displayHint { __typename ... on NormalChannelDisplayHint { noProgramsText } ... on LiveOnlyChannelDisplayHint { noProgramsText } } programs(timestamp: $timestamp, limit: 1) { programItems { startTime { timestamp isoString } endTime { timestamp isoString } media { __typename ... on Movie { title } ... on Episode { series { title } } ... on SportEvent { title } } } } } } }  fragment MobileSingleFeaturePanelMedia on SingleFeaturePanelMedia { __typename ... on Movie { __typename ...MobilePageMovie } ... on Series { __typename ...MobilePageSeries } ... on SportEvent { __typename ...MobilePageSportEvent } }  fragment MobileSingleFeaturePanel on SingleFeaturePanel { id title subtitle images { __typename ... on SingleFeaturePanelImages { promo16x9 { sourceNonEncoded } } } media { __typename ...MobileSingleFeaturePanelMedia } }  fragment MobilePageLinkPanel on PageLinkPanel { id title pageLinkContent { items { id name description type images { icon1x1 { sourceNonEncoded } showcard2x3 { sourceNonEncoded } } } } }'
+    }
+
+    response = send_req(url, post=True, json=json, headers=headers)
+    if response:
+        j_response = response.json()
+
+    try:
+        data = j_response['data']['page']['pagePanels']['items'][0]['timelineContent']['items']
+        get_items(data)
+    except:
+        xbmcgui.Dialog().notification(localized(30012), localized(30048))
+        return
 
 def kids():
     beartoken = addon.getSetting('cmore_beartoken')
@@ -1609,7 +1661,7 @@ def home():
         add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30010), url='', mode='channels', icon=tv_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30011), url='', mode='video_on_demand', icon=vod_icon, fanart=fanart, folder=True, playable=False)
-        add_item(label=localized(30039), url='', mode='sports', icon=sport_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30039), url='', mode='sports_page', icon=sport_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30038), url='', mode='favourites', icon=fav_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30032), url='', mode='search', icon=search_icon, fanart=fanart, folder=True, playable=False)
@@ -1748,8 +1800,14 @@ def router(param):
         elif mode == 'episodes':
             vod_episodes(exlink, exid)
 
-        elif mode == 'sports':
+        elif mode == 'sports_page':
+            sports_page()
+
+        elif mode == 'sports_table':
             sports()
+
+        elif mode == 'sports_upcoming':
+            sports_upcoming()
 
         elif mode == 'kids':
             kids()

@@ -211,3 +211,11 @@ msgstr "Deaktiver foreldrelås"
 msgctxt "#30048"
 msgid "Content not available"
 msgstr "Innhold ikke tilgjengelig"
+
+msgctxt "#30049"
+msgid "Table"
+msgstr "Program"
+
+msgctxt "#30050"
+msgid "Upcoming"
+msgstr "Kommende"
