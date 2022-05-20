@@ -219,3 +219,23 @@ msgstr "Program"
 msgctxt "#30050"
 msgid "Upcoming"
 msgstr "Kommende"
+
+msgctxt "#30051"
+msgid "InputStream Adaptive"
+msgstr "InputStream Adaptive"
+
+msgctxt "#30052"
+msgid "InputStream client for adaptive streams."
+msgstr "InputStream klient til adaptive streams."
+
+msgctxt "#30053"
+msgid "InputStream Adaptive settings"
+msgstr "InputStream Adaptive indstillinger"
+
+msgctxt "#30054"
+msgid "Settings related to InputStream client."
+msgstr "Indstillinger relateret til InputStream klient."
+
+msgctxt "#30055"
+msgid "Settings"
+msgstr "Indstillinger"

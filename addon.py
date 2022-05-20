@@ -102,6 +102,7 @@ kids_icon = os.path.join(icons, 'kids.png')
 fav_icon = os.path.join(icons, 'fav.png')
 search_icon = os.path.join(icons, 'search.png')
 lock_icon = os.path.join(icons, 'lock.png')
+settings_icon = os.path.join(icons, 'settings.png')
 
 login = addon.getSetting('cmore_username').strip()
 password = addon.getSetting('cmore_password').strip()
@@ -1664,11 +1665,13 @@ def home():
         add_item(label=localized(30039), url='', mode='sports_page', icon=sport_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
         add_item(label=localized(30038), url='', mode='favourites', icon=fav_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30055), url='', mode='settings', icon=settings_icon, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30032), url='', mode='search', icon=search_icon, fanart=fanart, folder=True, playable=False)
 
     elif login and childmode:
         add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30040), url='', mode='kids', icon=kids_icon, fanart=fanart, folder=True, playable=False)
+        add_item(label=localized(30055), url='', mode='settings', icon=settings_icon, fanart=fanart, folder=False, playable=False)
         add_item(label=localized(30042), url='', mode='pincode', icon=lock_icon, fanart=fanart, folder=False, playable=False)
 
     else:
@@ -1821,6 +1824,10 @@ def router(param):
 
         elif mode == 'ext':
             c_ext_info()
+
+        elif mode == 'settings':
+            addon.openSettings()
+            xbmc.executebuiltin('Container.Refresh()')
 
         elif mode == 'login':
             addon.openSettings()

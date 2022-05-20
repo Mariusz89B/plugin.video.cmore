@@ -127,5 +127,17 @@
 				</setting>
 			</group>
 		</category>
+		<category help="30054" id="ia" label="30051">
+			<group id="1">
+				<setting help="30052" id="ia_settings" label="30053" type="action">
+					<level>0</level>
+					<data>RunScript(special://home/addons/plugin.video.cmore/ia_settings.py,settings)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button"/>
+				</setting>
+			</group>
+		</category>
 	</section>
 </settings>
