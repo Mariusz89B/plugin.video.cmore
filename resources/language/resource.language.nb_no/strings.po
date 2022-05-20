@@ -207,3 +207,7 @@ msgstr "PIN-kode"
 msgctxt "#30047"
 msgid "Disable parental lock"
 msgstr "Deaktiver foreldrelås"
+
+msgctxt "#30048"
+msgid "Content not available"
+msgstr "Innhold ikke tilgjengelig"

@@ -629,8 +629,12 @@ def vod(genre_id):
     response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
-        get_items(data)
+        try:
+            data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
+            get_items(data)
+        except:
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return
 
 def get_items(data, lst=True):
     titles = set()
@@ -779,7 +783,11 @@ def vod_seasons(media_id):
     response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        seasons = j_response['data']['series']['seasonLinks']['items']
+        try:
+            seasons = j_response['data']['series']['seasonLinks']['items']
+        except:
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return
 
         for item in seasons:
             season_id = item['id']
@@ -838,7 +846,11 @@ def vod_episodes(season, season_id):
     response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        items = j_response['data']['season']['episodes']['episodeItems']
+        try:
+            items = j_response['data']['season']['episodes']['episodeItems']
+        except:
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return
 
         count = 0
 
@@ -1389,8 +1401,8 @@ def get_stream(exlink, catchup_type):
 
         response = send_req(url, post=True, headers=headers, json=data, params=params, verify=True, timeout=timeouts)
         if not response:
-            xbmcgui.Dialog().notification(localized(30012), localized(30006))
-            return None
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return None, None
 
         response = response.json()
 
@@ -1474,8 +1486,12 @@ def sports():
                 xbmcgui.Dialog().notification(localized(30012), error[0]['message'])
                 return
 
-            data = j_response['data']['sportEventList']['content']['sections'][0]['items']
-            get_items(data)
+            try:
+                data = j_response['data']['sportEventList']['content']['sections'][0]['items']
+                get_items(data)
+            except:
+                xbmcgui.Dialog().notification(localized(30012), localized(30048))
+                return
 
 def kids():
     beartoken = addon.getSetting('cmore_beartoken')
@@ -1507,8 +1523,12 @@ def kids():
     response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
-        get_items(data)
+        try:
+            data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
+            get_items(data)
+        except:
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return
 
 def favourites():
     xbmc.executebuiltin("ActivateWindow(10134)")
@@ -1535,11 +1555,7 @@ def play(exlink, title, media_id, catchup_type, start, end):
         catchup_type = 'ONDEMAND'
         exlink = media_id
 
-    try:
-        strm_url, license_url = get_stream(exlink, catchup_type)
-    except:
-        xbmcgui.Dialog().notification(localized(30012), 'Content not available')
-        return
+    strm_url, license_url = get_stream(exlink, catchup_type)
 
     PROTOCOL = 'mpd'
     DRM = 'com.widevine.alpha'
