@@ -59,7 +59,6 @@ from datetime import *
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 
-import base64
 import re
 import time
 import threading
@@ -1560,8 +1559,7 @@ def play(exlink, title, media_id, catchup_type, start, end):
         xbmcplugin.setResolvedUrl(addon_handle, True, listitem=play_item)
 
 def pincode():
-    pin_code_base = addon.getSetting('cmore_pincode')
-    pin_code = base64.b64decode(pin_code_base).decode('utf-8')
+    pin_code = addon.getSetting('cmore_pincode')
 
     res = xbmcgui.Dialog().yesno(localized(30012), localized(30043))
     if res:
@@ -1655,10 +1653,9 @@ def profiles():
 
             pin_code = child_lock.get('pinCode')
             if pin_code:
-                addon.setSetting('cmore_pincode', base64.b64encode(pin_code.encode('utf-8')))
+                addon.setSetting('cmore_pincode', pin_code)
 
-            pin_code_base = addon.getSetting('cmore_pincode')
-            pin_code_ = base64.b64decode(pin_code_base).decode('utf-8')
+            pin_code_ = addon.getSetting('cmore_pincode')
 
             if pin_code == pin_code_ and pin_code_ != '':
                 addon.setSetting('cmore_childlock', 'false')
