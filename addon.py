@@ -1531,11 +1531,15 @@ def play(exlink, title, media_id, catchup_type, start, end):
             if media_id:
                 exlink = media_id
 
-        strm_url, license_url = get_stream(exlink, catchup_type)
-
     else:
         catchup_type = 'ONDEMAND'
-        strm_url, license_url = get_stream(media_id, catchup_type)
+        exlink = media_id
+
+    try:
+        strm_url, license_url = get_stream(exlink, catchup_type)
+    except:
+        xbmcgui.Dialog().notification(localized(30012), 'Content not available')
+        return
 
     PROTOCOL = 'mpd'
     DRM = 'com.widevine.alpha'
@@ -1559,7 +1563,7 @@ def play(exlink, title, media_id, catchup_type, start, end):
         xbmcplugin.setResolvedUrl(addon_handle, True, listitem=play_item)
 
 def pincode():
-    pin_code = addon.getSetting('cmore_pincode')
+    j_response, pin_code = profile_data()
 
     res = xbmcgui.Dialog().yesno(localized(30012), localized(30043))
     if res:
@@ -1602,9 +1606,9 @@ def home():
     else:
         add_item(label=localized(30008), url='', mode='login', icon=icon, fanart=fanart, folder=False, playable=False)
 
-    xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
+    xbmcplugin.endOfDirectory(addon_handle)
 
-def profiles():
+def profile_data():
     profile = ''
 
     beartoken = addon.getSetting('cmore_beartoken')
@@ -1653,35 +1657,46 @@ def profiles():
 
             pin_code = child_lock.get('pinCode')
             if pin_code:
-                addon.setSetting('cmore_pincode', pin_code)
+                pin_code = str(pin_code)
+
+            adult_enabled = addon.getSetting('cmore_adult_enabled')
+            if adult_enabled == 'true':
+                adult = True
+            else:
+                adult = False
 
             pin_code_ = addon.getSetting('cmore_pincode')
 
-            if pin_code == pin_code_ and pin_code_ != '':
+            if pin_code == pin_code_ and pin_code_ != '' and adult:
                 addon.setSetting('cmore_childlock', 'false')
 
-        profiles = []
+        return j_response, pin_code
 
-        for item in data['profiles']:
-            profile = item['alias']
-            avatar = item['avatar']['head']['sourceNonEncoded']
-            profiles.append((profile, avatar))
+def profiles(j_response):
+    data = j_response['data']['user']
 
-        items = []
-        for item in profiles:
+    profiles = []
 
-            list_item = xbmcgui.ListItem(item[0])
-            list_item.setArt({'poster': str(item[1]), 'icon': str(item[1])})
-            items.append(list_item)
+    for item in data['profiles']:
+        profile = item['alias']
+        avatar = item['avatar']['head']['sourceNonEncoded']
+        profiles.append((profile, avatar))
 
-        ret = xbmcgui.Dialog().select('Profile', list(items), useDetails=True)
-        if ret < 0:
-            return
+    items = []
+    for item in profiles:
 
-        profile = profiles[ret]
+        list_item = xbmcgui.ListItem(item[0])
+        list_item.setArt({'poster': str(item[1]), 'icon': str(item[1])})
+        items.append(list_item)
+
+    ret = xbmcgui.Dialog().select('Profile', list(items), useDetails=True)
+    if ret < 0:
+        return
+
+    profile = profiles[ret]
 
     addon.setSetting('cmore_profile_name', profile[0])
-    addon.setSetting('cmore_profile_avatar', profile[-1])
+    addon.setSetting('cmore_profile_avatar', profile[-1]) 
 
 def router(param):
     args = dict(urlparse.parse_qsl(param))
@@ -1738,7 +1753,8 @@ def router(param):
             xbmc.executebuiltin('Container.Refresh()')
 
         elif mode == 'logged':
-            profiles()
+            j_response, pin_code = profile_data()
+            profiles(j_response)
             xbmc.executebuiltin('Container.Refresh()')
 
         elif mode == 'pincode':

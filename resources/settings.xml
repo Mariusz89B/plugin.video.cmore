@@ -38,12 +38,22 @@
 						<hidden>true</hidden>
 					</control>
 				</setting>
-				<setting help="" id="cmore_pincode" label="30046" type="string">
+				<setting help="" id="cmore_adult_enabled" label="30047" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting help="" id="cmore_pincode" label="30046" type="string" parent="cmore_adult_enabled">
 					<level>0</level>
 					<default/>
 					<constraints>
 						<allowempty>true</allowempty>
 					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="cmore_adult_enabled">true</condition>
+						</dependency>
+					</dependencies>
 					<control format="string" type="edit">
 						<heading>30044</heading>
 						<hidden>true</hidden>

@@ -203,3 +203,7 @@ msgstr "Fel PIN-kod"
 msgctxt "#30046"
 msgid "PIN-code"
 msgstr "PIN-kod"
+
+msgctxt "#30047"
+msgid "Disable parental lock"
+msgstr "Avaktivera föräldralås"
