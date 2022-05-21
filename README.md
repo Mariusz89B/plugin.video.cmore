@@ -15,9 +15,7 @@ https://www.paypal.me/mariusz89b
 This add-on is unoffical and is not endorsed or supported by any of the services provided in any way. 
 Any trademarks used belong to their owning companies and organisations. 
 
-Logging on to websites is done through the services of a television provider,
-through a standard application programming interface (API) request.
-
+Connection to the service takes place with the help of an API request that is processed by the server and responded back to the client.
 
 ## Regulations
 
