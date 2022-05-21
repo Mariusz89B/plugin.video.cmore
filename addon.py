@@ -660,6 +660,7 @@ def get_items(data):
                 mode = 'play'
 
             title = media.get('title')
+            label = title
             media_id = media.get('id')
             genre = media.get('genre')
 
@@ -677,7 +678,7 @@ def get_items(data):
                             da_start = dt_start.strftime('%H:%M')
 
                             if da_start != '00:00':
-                                title = title + ' [COLOR grey](' + da_start + ')[/COLOR]'
+                                label = title + ' [COLOR grey]({0})[/COLOR]'.format(da_start)
 
             outline = media.get('description')
             plot = media.get('descriptionLong')
@@ -748,7 +749,7 @@ def get_items(data):
             xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
 
             if title not in titles:
-                add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=title, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title':label, 'originaltitle':title, 'plot':plot, 'plotoutline':outline, 'aired':date, 'dateadded':date, 'duration':duration, 'genre':genre}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
                 titles.add(title)
 
     xbmcplugin.setContent(addon_handle, 'sets')
@@ -1228,12 +1229,12 @@ def live_channel(exlink):
             name_ = title + '[B][COLOR violet] ● [/COLOR][/B]'
 
         elif int(end) >= int(now):
-            name_ = '[COLOR grey]' + title + '[/COLOR] [B][/B]'
+            name_ = '[COLOR grey]{0}[/COLOR] [B][/B]'.format(title)
 
         else:
             name_ = title + '[B][COLOR limegreen] ● [/COLOR][/B]'
 
-        name = name_ + '[COLOR grey](' + date + ')[/COLOR]'
+        name = name_ + '[COLOR grey]({0})[/COLOR]'.format(date)
 
         catchup = 'LIVE'
 
@@ -1437,8 +1438,8 @@ def get_stream(exlink, catchup_type):
     return None, None
 
 def sports_page():
-    add_item(label='Tablå', url='', mode='sports_table', icon=icon, fanart=fanart, folder=True, playable=False)
-    add_item(label='Kommande', url='', mode='sports_upcoming', icon=icon, fanart=fanart, folder=True, playable=False)
+    add_item(label=localized(30049), url='', mode='sports_table', icon=icon, fanart=fanart, folder=True, playable=False)
+    add_item(label=localized(30050), url='', mode='sports_upcoming', icon=icon, fanart=fanart, folder=True, playable=False)
 
     xbmcplugin.endOfDirectory(addon_handle)
 

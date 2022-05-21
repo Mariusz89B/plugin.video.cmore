@@ -50,7 +50,6 @@ class inputstream_adaptive:
     def __init__(self):
         self.close()
         self.settings()
-        print('Open inputstream.adaptive settings')
 
     def close(self):
         xbmc.executebuiltin('Dialog.Close(all, true)')
