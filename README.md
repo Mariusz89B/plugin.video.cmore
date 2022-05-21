@@ -12,10 +12,10 @@ https://www.paypal.me/mariusz89b
 
 ## Disclaimer
 
-This add-on is unoffical and is not endorsed or supported by any of the services provided in any way. 
+This add-on is unoffical and is not endorsed or supported by the service provided in any way. 
 Any trademarks used belong to their owning companies and organisations. 
 
-Connection to the service takes place with the help of an API request that is processed by the server and responded back to the client.
+Connection to the service takes place with the help of an API request that is processed by the server and respond back to the client.
 
 ## Regulations
 
