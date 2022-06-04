@@ -305,10 +305,9 @@ def login_service():
             except:
                 pass
 
-            create_data()
-            profile = profiles()
-
-        login = login_data(reconnect=False)
+            login = login_data(reconnect=False)
+        else:
+            login = True
 
         if login:
             run = Threading()
@@ -317,6 +316,7 @@ def login_service():
 
     except Exception as ex:
         print('login_service exception: {}'.format(ex))
+        addon.setSetting('cmore_devush', '')
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
     return False
 
@@ -365,7 +365,7 @@ def login_data(reconnect, retry=0):
 
         response = send_req(url, post=True, headers=headers, json=data, verify=True, timeout=timeouts)
 
-        url = 'https://logingateway-cmore.t6a.net/logingateway/rest/v1/authenticate'
+        url = 'https://logingateway-cmore.clientapi-prod.live.tv.telia.net/logingateway/rest/v1/authenticate?redirectUri=https%3A%2F%2Fwww.cmore.se%2F'
 
         headers = {
             'authority': 'logingateway-cmore.t6a.net',
@@ -399,7 +399,7 @@ def login_data(reconnect, retry=0):
             return
 
         j_response = response.json()
-        code = j_response['redirectUri'].replace('https://www.cmore.{cc}/?code='.format(cc=cc[country]), '')
+        code = j_response['redirectUri'].replace('https://www.cmore.{cc}/,https://www.cmore.{cc}/?code='.format(cc='se'), '')
 
         url = 'https://logingateway.cmore.{cc}/logingateway/rest/v1/oauth/token'.format(cc=cc[country])
 
@@ -1009,7 +1009,7 @@ def live_channels():
     login = login_service()
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
-        return
+        raise Exception
 
     beartoken = addon.getSetting('cmore_beartoken')
     tv_client_boot_id = addon.getSetting('cmore_tv_client_boot_id')
@@ -1039,7 +1039,7 @@ def live_channels():
 
         engagementjson = send_req(url, headers=headers, verify=True)
         if not engagementjson:
-            return result
+            raise Exception
 
         engagementjson = engagementjson.json()
 
@@ -1096,7 +1096,7 @@ def live_channels():
         response = send_req(url, post=True, json=json, headers=headers)
         if not response:
             xbmcgui.Dialog().notification(localized(30012), localized(30006))
-            return
+            raise Exception
 
         j_response = response.json()
         channels = j_response['data']['channels']['channelItems']
