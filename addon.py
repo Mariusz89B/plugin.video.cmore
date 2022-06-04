@@ -365,7 +365,7 @@ def login_data(reconnect, retry=0):
 
         response = send_req(url, post=True, headers=headers, json=data, verify=True, timeout=timeouts)
 
-        url = 'https://logingateway-cmore.clientapi-prod.live.tv.telia.net/logingateway/rest/v1/authenticate?redirectUri=https%3A%2F%2Fwww.cmore.se%2F'
+        url = 'https://logingateway-cmore.clientapi-prod.live.tv.telia.net/logingateway/rest/v1/authenticate?redirectUri=https%3A%2F%2Fwww.cmore.{cc}%2F'.format(cc=cc[country])
 
         headers = {
             'authority': 'logingateway-cmore.t6a.net',
@@ -399,7 +399,7 @@ def login_data(reconnect, retry=0):
             return
 
         j_response = response.json()
-        code = j_response['redirectUri'].replace('https://www.cmore.{cc}/,https://www.cmore.{cc}/?code='.format(cc='se'), '')
+        code = j_response['redirectUri'].replace('https://www.cmore.{cc}/,https://www.cmore.{cc}/?code='.format(cc=cc[country]), '')
 
         url = 'https://logingateway.cmore.{cc}/logingateway/rest/v1/oauth/token'.format(cc=cc[country])
 
