@@ -305,10 +305,7 @@ def login_service():
             except:
                 pass
 
-            login = login_data(reconnect=False)
-        else:
-            login = True
-
+        login = login_data(reconnect=False)
         if login:
             run = Threading()
 
@@ -1646,6 +1643,8 @@ def pincode():
             xbmcgui.Dialog().notification(localized(30012), localized(30045))
 
 def home():
+    check_login()
+
     get_childmode = addon.getSetting('cmore_childlock')
     if get_childmode == 'true':
         childmode = True
