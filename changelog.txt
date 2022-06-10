@@ -1,3 +1,7 @@
+v1.0.2 (2022-06-10)
+- Added days for live channels.
+- Code refactoring.
+
 v1.0.1 (2022-06-09)
 - Added new categories for sports and kids section.
 
