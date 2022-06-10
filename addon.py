@@ -189,7 +189,7 @@ def add_item(label, url, mode, folder, playable, media_id=None, catchup=None, st
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
-        url = build_url({'title': label, 'mode': mode, 'url': url, 'media_id': media_id, 'catchup': catchup, 'start': start, 'end': end, 'page': page, 'plot': plot, 'image': icon}),
+        url=build_url({'title': label, 'mode': mode, 'url': url, 'media_id': media_id, 'catchup': catchup, 'start': start, 'end': end, 'page': page, 'plot': plot, 'image': icon}),
         listitem=list_item,
         isFolder=folder)
 
@@ -306,6 +306,8 @@ def login_service():
             except:
                 pass
 
+            create_data()
+
         login = login_data(reconnect=False)
         if login:
             run = Threading()
@@ -388,7 +390,7 @@ def login_data(reconnect, retry=0):
             'whiteLabelBrand': 'CMORE',
         }
 
-        response = send_req(url, post=True, params=params, headers=headers, json=data, verify=True, timeout=timeouts)
+        response = send_req(url, post=True, headers=headers, json=data, params=params, verify=True, timeout=timeouts)
 
         code = ''
 
@@ -406,8 +408,8 @@ def login_data(reconnect, retry=0):
             'accept': 'application/json',
             'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
             'dnt': '1',
-            'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-            'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+            'origin': base[country],
+            'referer': referer[country],
             'tv-client-boot-id': tv_client_boot_id,
             'tv-client-name': 'web',
             'user-agent': UA,
@@ -452,9 +454,9 @@ def login_data(reconnect, retry=0):
             'accept': '*/*',
             'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
             'authorization': 'Bearer ' + beartoken,
-            'DNT': '1',
-            'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-            'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+            'dnt': '1',
+            'origin': base[country],
+            'referer': referer[country],
             'user-agent': UA,
             'tv-client-boot-id': tv_client_boot_id,
         }
@@ -522,8 +524,8 @@ def login_data(reconnect, retry=0):
             'accept': '*/*',
             'accept-language': 'sv,en;q=0.9,en-GB;q=0.8,en-US;q=0.7,pl;q=0.6,fr;q=0.5',
             'authorization': 'Bearer ' + beartoken,
-            'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-            'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+            'origin': base[country],
+            'referer': referer[country],
             'user-agent': UA,
             'tv-client-boot-id': tv_client_boot_id,
         }
@@ -628,13 +630,14 @@ def vod(genre_id):
     response = send_req(url, post=True, json=json, headers=headers)
     if response:
         j_response = response.json()
-        #try:
-        data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
-        get_items(data)
-        #except Exception as ex:
-            #print('vod Exception: {}'.format(ex))
-            #xbmcgui.Dialog().notification(localized(30012), localized(30048))
-            #return
+        try:
+            data = j_response['data']['page']['pagePanels']['items'][0]['mediaContent']['items']
+            get_items(data)
+
+        except Exception as ex:
+            print('vod Exception: {}'.format(ex))
+            xbmcgui.Dialog().notification(localized(30012), localized(30048))
+            return
 
 def get_items(data):
     titles = set()
@@ -642,8 +645,12 @@ def get_items(data):
 
     for item in data:
         media = item.get('media')
+        if not media:
+            media = item
+
         if media:
             typename = media.get('__typename')
+            mode = 'play'
             folder = False
             playable = True
 
@@ -659,6 +666,9 @@ def get_items(data):
                 mode = 'play'
 
             title = media.get('title')
+            if not title:
+                title = media.get('name')
+
             label = title
             media_id = media.get('id')
             genre = media.get('genre')
@@ -724,10 +734,12 @@ def get_items(data):
                 if subscription:
                     for item in subscription:
                         media_id = item['item']['playbackSpec']['videoId']
+            
+            poster = ''
+            icon = ''
 
             images = media.get('images')
             if images:
-                poster = ''
                 card_2x3 = images.get('showcard2x3')
                 if card_2x3:
                     src = card_2x3.get('sourceNonEncoded')
@@ -736,7 +748,6 @@ def get_items(data):
                     if src:
                         poster = unquote(src)
 
-                icon = ''
                 card_16x9 = images.get('showcard16x9')
                 if card_16x9:
                     src = card_16x9.get('sourceNonEncoded')
@@ -789,6 +800,7 @@ def vod_seasons(media_id):
         j_response = response.json()
         try:
             seasons = j_response['data']['series']['seasonLinks']['items']
+
         except Exception as ex:
             print('vod seasons Exception: {}'.format(ex))
             xbmcgui.Dialog().notification(localized(30012), localized(30048))
@@ -853,6 +865,7 @@ def vod_episodes(season, season_id):
         j_response = response.json()
         try:
             items = j_response['data']['season']['episodes']['episodeItems']
+
         except Exception as ex:
             print('vod episodes Exception: {}'.format(ex))
             xbmcgui.Dialog().notification(localized(30012), localized(30048))
@@ -892,6 +905,7 @@ def vod_episodes(season, season_id):
                 actors = item.get('actors')
                 if actors:
                     actors_lst = actors.split(',')
+
                 genre = item.get('genre')
                 sub_genre = item.get('subGenres')
 
@@ -928,7 +942,7 @@ def vod_episodes(season, season_id):
                 ext = localized(30027)
                 context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-                add_item(label=label, url='vod', mode='play', media_id=media_id, folder=False, playable=True, info_labels={'title':title, 'originaltitle':title, 'plot':plot, 'genre':genre, 'director': directors, 'cast': actors_lst, 'sortepisode': episode_nr, 'sortseason': season_nr, 'mpaa': age, 'year': date}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=label, url='vod', mode='play', media_id=media_id, folder=False, playable=True, info_labels={'title': title, 'originaltitle': title, 'plot': plot, 'genre': genre, 'director': directors, 'cast': actors_lst, 'sortepisode': episode_nr, 'sortseason': season_nr, 'mpaa': age, 'year': date}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -1082,8 +1096,8 @@ def live_channels():
             'authorization': 'Bearer ' + beartoken,
             'content-type': 'application/json',
             'dnt': '1',
-            'origin': 'https://www.cmore.{cc}'.format(cc=cc[country]),
-            'referer': 'https://www.cmore.{cc}/'.format(cc=cc[country]),
+            'origin': base[country],
+            'referer': referer[country],
             'tv-client-boot-id': tv_client_boot_id,
             'tv-client-browser': 'Microsoft Edge',
             'tv-client-browser-version': '101.0.1210.32',
@@ -1119,7 +1133,6 @@ def live_channels():
 
         for channel in channels:
             if channel['id'] in engagementLiveChannels:
-
                 count += 1
 
                 exlink = channel['id']
@@ -1163,7 +1176,7 @@ def live_channels():
     except Exception as ex:
         print('live_channels exception: {}'.format(ex))
 
-def live_channel(exlink):
+def live_channel(exlink, extitle):
     country            = int(addon.getSetting('cmore_locale'))
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
@@ -1211,44 +1224,59 @@ def live_channel(exlink):
             return None, None
 
         program_items = j_response['data']['channel']['programs']['programItems']
+        if not program_items:
+            program_items.append({'title': extitle, 'id': exlink, 'media': {'playback': {'play': {'linear': {'item': {'playbackSpec': {'videoIdType': 'MEDIA', 'watchMode': 'LIVE'}}}}}}})
 
         count = 0
 
         for program in program_items:
             count += 1
 
-            now = int(time.time())
-
-            start = program['startTime']['timestamp'] // 1000
-            dt_start = datetime.fromtimestamp(start)
-            st_start = dt_start.strftime('%H:%M')
-            da_start = dt_start.strftime('%Y-%m-%d')
-
-            end = program['endTime']['timestamp'] // 1000
-            dt_end = datetime.fromtimestamp(end)
-            st_end = dt_end.strftime('%H:%M')
-
-            duration = end - start
-
-            aired = da_start
-            date = st_start + ' - ' + st_end
-
             title = program['title']
             org_title = title
 
-            if len(title) > 50:
-                title = title[:50]
+            now = int(time.time())
 
-            if int(now) >= int(start) and int(now) <= int(end):
+            try:
+                start = program['startTime']['timestamp'] // 1000
+                dt_start = datetime.fromtimestamp(start)
+                st_start = dt_start.strftime('%H:%M')
+                da_start = dt_start.strftime('%Y-%m-%d')
+
+                end = program['endTime']['timestamp'] // 1000
+                dt_end = datetime.fromtimestamp(end)
+                st_end = dt_end.strftime('%H:%M')
+
+                duration = end - start
+
+                aired = da_start
+                date = st_start + ' - ' + st_end
+
+                if len(title) > 50:
+                    title = title[:50]
+
+                if int(now) >= int(start) and int(now) <= int(end):
+                    name_ = title + '[B][COLOR violet] ● [/COLOR][/B]'
+
+                elif int(end) >= int(now):
+                    name_ = '[COLOR grey]{0}[/COLOR] [B][/B]'.format(title)
+
+                else:
+                    name_ = title + '[B][COLOR limegreen] ● [/COLOR][/B]'
+
+                name = name_ + '[COLOR grey]({0})[/COLOR]'.format(date)
+
+            except:
                 name_ = title + '[B][COLOR violet] ● [/COLOR][/B]'
+                name = name_ + '[COLOR grey](00:00 - 23:59)[/COLOR]'
 
-            elif int(end) >= int(now):
-                name_ = '[COLOR grey]{0}[/COLOR] [B][/B]'.format(title)
+                start = 0
+                end = 0
 
-            else:
-                name_ = title + '[B][COLOR limegreen] ● [/COLOR][/B]'
+                duration = ''
 
-            name = name_ + '[COLOR grey]({0})[/COLOR]'.format(date)
+                aired = ''
+                date = ''
 
             catchup = 'LIVE'
 
@@ -1277,10 +1305,11 @@ def live_channel(exlink):
                                     playback_spec = items.get('playbackSpec')
                                     if playback_spec:
                                         catchup = playback_spec.get('watchMode')
+            icon = ''
+            poster = ''
 
             images = media.get('images')
             if images:
-                poster = ''
                 card_2x3 = images.get('showcard2x3')
                 if card_2x3:
                     src = card_2x3.get('sourceNonEncoded')
@@ -1289,7 +1318,6 @@ def live_channel(exlink):
                     if src:
                         poster = unquote(src)
 
-                icon = ''
                 card_16x9 = images.get('showcard16x9')
                 if card_16x9:
                     src = card_16x9.get('sourceNonEncoded')
@@ -1301,7 +1329,7 @@ def live_channel(exlink):
             ext = localized(30027)
             context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(title))]
 
-            add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, folder=False, playable=True, info_labels={'title':title, 'originaltitle':org_title, 'plot':plot, 'plotoutline':plot, 'aired':aired, 'dateadded':date, 'duration':duration, 'genre':genre, 'country':lang}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+            add_item(label=name, url=exlink, mode='play', media_id=media_id, catchup=catchup, start=start, end=end, folder=False, playable=True, info_labels={'title': title, 'originaltitle': org_title, 'plot': plot, 'plotoutline': plot, 'aired': aired, 'dateadded': date, 'duration': duration, 'genre': genre, 'country': lang}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -2023,7 +2051,7 @@ def router(param):
             play(exlink, extitle, exid, excatchup, exstart, exend)
 
         elif mode == 'programs':
-            live_channel(exlink)
+            live_channel(exlink, extitle)
 
         elif mode == 'channels':
             live_channels()
