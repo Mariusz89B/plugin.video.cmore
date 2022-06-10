@@ -247,3 +247,7 @@ msgstr "Ryd login oplysninger"
 msgctxt "#30057"
 msgid "Login credentials cleared."
 msgstr "Loginoplysninger ryddet."
+
+msgctxt "#30058"
+msgid "Profile"
+msgstr "Profil"

@@ -247,3 +247,7 @@ msgstr "Rensa inloggningsuppgifter"
 msgctxt "#30057"
 msgid "Login credentials cleared."
 msgstr "Inloggningsuppgifter rensades."
+
+msgctxt "#30058"
+msgid "Profile"
+msgstr "Profil"

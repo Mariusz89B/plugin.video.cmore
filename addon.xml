@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.cmore" name="C More" version="1.0.1" provider-name="mariusz89b">
+<addon id="plugin.video.cmore" name="C More" version="1.0.2" provider-name="mariusz89b">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.inputstreamhelper" version="0.2.4"/>
     <import addon="script.module.requests" version="2.9.1"/>
 	<import addon="script.module.six" />
+	<import addon="script.module.iso8601" />
+	<import addon="script.module.pytz" />
+	<import addon="script.module.future" />
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
@@ -21,7 +24,11 @@
     <platform>all</platform>
     <license>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 and MIT LICENSE.</license>
     <source>https://github.com/Mariusz89B/plugin.video.cmore</source>
-    <news>v1.0.1 (2022-06-09)
+    <news>v1.0.2 (2022-06-10)
+- Added days for live channels.
+- Code refactoring.
+
+v1.0.1 (2022-06-09)
 - Added new categories for sports and kids section.
 
 v1.0 (2022-06-08)

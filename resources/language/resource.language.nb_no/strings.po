@@ -247,3 +247,7 @@ msgstr "Slett påloggingsinformasjon"
 msgctxt "#30057"
 msgid "Login credentials cleared."
 msgstr "Påloggingsinformasjon slettet."
+
+msgctxt "#30058"
+msgid "Profile"
+msgstr "Profil"

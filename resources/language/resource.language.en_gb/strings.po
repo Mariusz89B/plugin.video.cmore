@@ -247,3 +247,7 @@ msgstr ""
 msgctxt "#30057"
 msgid "Login credentials cleared."
 msgstr ""
+
+msgctxt "#30058"
+msgid "Profile"
+msgstr ""
