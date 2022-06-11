@@ -1861,12 +1861,13 @@ def play(exlink, title, media_id, catchup_type, start, end):
         now = int(time.time())
 
         if int(now) >= int(start) and int(now) <= int(end):
-            response = xbmcgui.Dialog().yesno(localized(30012), localized(30014))
-            if response:
-                exlink = media_id
-                catchup_type = 'STARTOVER'
-            else:
-                catchup_type = 'LIVE'
+            catchup_type = 'LIVE'
+            if play_beginning:
+                response = xbmcgui.Dialog().yesno(localized(30012), localized(30014))
+                if response:
+                    exlink = media_id
+                    catchup_type = 'STARTOVER'
+
         elif int(end) >= int(now):
             xbmcgui.Dialog().ok(localized(30012), localized(30028))
             return
@@ -2040,7 +2041,32 @@ def profiles(j_response):
     profile = profiles[ret]
 
     addon.setSetting('cmore_profile_name', profile[0])
-    addon.setSetting('cmore_profile_avatar', profile[-1]) 
+    addon.setSetting('cmore_profile_avatar', profile[-1])
+
+def build_m3u():
+    path = xbmcgui.Dialog().browse(0, localized(30062), 'files')
+    if path == '':
+        return
+
+    xbmcgui.Dialog().notification(localized(30012), localized(30063), xbmcgui.NOTIFICATION_INFO)
+    data = '#EXTM3U'
+
+    items = live_channels()
+    for item in items:
+        cid = item[0]
+        url = 'plugin://plugin.video.cmore/?title=&mode=play&url={cid}&catchup=LIVE&start=0&end=0'.format(cid=cid)
+
+        tvg_id = item[1].lower().replace(' ', '_') + '.' + cc[country]
+        title = item[1] + ' ' + ca[country]
+        icon = item[2]
+
+        data += '\n#EXTINF:-1 tvg-id="{id}" tvg-name="{title}" tvg-logo="{icon}" group-title="C More", {title}\n{url}'.format(id=tvg_id, title=title, url=url, icon=icon)
+
+    with open(path + 'cmore_iptv.m3u', 'w+') as f:
+        f.write(data)
+
+    xbmcgui.Dialog().notification(localized(30012), localized(30064), xbmcgui.NOTIFICATION_INFO)
+    return
 
 def router(param):
     args = dict(urlparse.parse_qsl(param))
@@ -2123,6 +2149,9 @@ def router(param):
         elif mode == 'pincode':
             pincode()
             xbmc.executebuiltin('Container.Refresh()')
+
+        elif mode == 'build_m3u':
+            build_m3u()
 
     else:
         home()
