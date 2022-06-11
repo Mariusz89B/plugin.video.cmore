@@ -144,6 +144,20 @@
 				</setting>
 			</group>
 		</category>
+		<category id="build_m3u" label="30060" help="">
+			<group id="1">
+				<setting id="create_playlist" type="action" label="30061" help="">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.cmore?mode=build_m3u)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
 		<category help="30054" id="ia" label="30051">
 			<group id="1">
 				<setting help="30052" id="ia_settings" label="30053" type="action">
