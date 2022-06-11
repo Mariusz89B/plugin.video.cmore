@@ -1131,6 +1131,8 @@ def live_channels():
 
         count = 0
 
+        channel_lst = []
+
         for channel in channels:
             if channel['id'] in engagementLiveChannels:
                 count += 1
@@ -1169,12 +1171,15 @@ def live_channels():
                     img = icons.get('dark').get('source')
                     icon = unquote(img)
 
+                channel_lst.append((exlink, name, icon))
                 add_item(label=name, url=exlink, mode='programs', icon=icon, folder=True, playable=False, info_labels={'title':name, 'plot':name}, fanart=fanart, item_count=count)
 
         xbmcplugin.endOfDirectory(addon_handle)
 
     except Exception as ex:
         print('live_channels exception: {}'.format(ex))
+
+    return channel_lst
 
 def live_channel(exlink, extitle):
     country            = int(addon.getSetting('cmore_locale'))
