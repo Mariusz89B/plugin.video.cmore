@@ -1034,6 +1034,8 @@ def search(query):
             get_items(data)
 
 def live_channels():
+    channel_lst = []
+
     login = login_service()
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
@@ -1067,7 +1069,9 @@ def live_channels():
 
         engagementjson = send_req(url, headers=headers, verify=True)
         if not engagementjson:
-            raise Exception
+            addon.setSetting('cmore_devush', '')
+            print('errorMessage: {e}'.format(e=str(engagementjson)))
+            return live_channels()
 
         engagementjson = engagementjson.json()
 
@@ -1130,8 +1134,6 @@ def live_channels():
         channels = j_response['data']['channels']['channelItems']
 
         count = 0
-
-        channel_lst = []
 
         for channel in channels:
             if channel['id'] in engagementLiveChannels:
