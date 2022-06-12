@@ -296,7 +296,7 @@ def refresh_timedelta(valid_to):
 
     return result
 
-def login_service():
+def login_service(reconnect, retry=0):
     try:
         dashjs = addon.getSetting('cmore_devush')
         if dashjs == '':
@@ -308,7 +308,7 @@ def login_service():
 
             create_data()
 
-        login = login_data(reconnect=False)
+        login = login_data(reconnect, retry)
         if login:
             run = Threading()
 
@@ -1036,7 +1036,7 @@ def search(query):
 def live_channels():
     channel_lst = []
 
-    login = login_service()
+    login = login_service(reconnect=True)
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
         raise Exception
@@ -1937,7 +1937,7 @@ def home():
         profile_name = 'C More'
         profile_avatar = icon
 
-    login = login_service()
+    login = login_service(reconnect=True)
 
     if login and not childmode:
         add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
