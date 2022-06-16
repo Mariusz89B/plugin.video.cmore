@@ -106,6 +106,12 @@ search_icon = os.path.join(icons, 'search.png')
 lock_icon = os.path.join(icons, 'lock.png')
 settings_icon = os.path.join(icons, 'settings.png')
 
+catchup_msg = addon.getSetting('cmore_play_beginning')
+if catchup_msg == 'true':
+    play_beginning = True
+else:
+    play_beginning = False
+
 login = addon.getSetting('cmore_username').strip()
 password = addon.getSetting('cmore_password').strip()
 
