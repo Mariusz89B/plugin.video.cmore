@@ -311,8 +311,8 @@ def refresh_timedelta(valid_to):
 def login_service(reconnect, retry=0):
     try:
         dashjs = addon.getSetting('cmore_devush')
-        valid_to = addon.getSetting('cmore_valid_to')
-        if dashjs == '' and valid_to == '':
+        valid_to = addon.getSetting('cmore_validto')
+        if (dashjs == '' or valid_to == ''):
             try:
                 msg = localized(30000)
                 xbmcgui.Dialog().ok(localized(30012), str(msg))
@@ -411,8 +411,12 @@ def login_data(reconnect, retry=0):
         code = ''
 
         if not response:
-            xbmcgui.Dialog().notification(localized(30012), localized(30006))
-            return False
+            if reconnect and retry < 3:
+                retry += 1
+                login_service(reconnect=True, retry=retry)
+            else:
+                xbmcgui.Dialog().notification(localized(30012), localized(30006))
+                return False
 
         j_response = response.json()
         code = j_response['redirectUri'].replace('https://www.cmore.{cc}/,https://www.cmore.{cc}/?code='.format(cc=cc[country]), '')
