@@ -62,7 +62,6 @@ from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestExce
 
 import re
 import time
-import threading
 import six
 import uuid
 import iso8601
@@ -140,30 +139,6 @@ class proxydt(datetime):
         return res
 
 proxydt = proxydt
-
-class Threading(object):
-    def __init__(self):
-        self.thread = threading.Thread(target=self.run, args=())
-        self.thread.daemon = True
-        self.thread.start()
-
-    def run(self):
-        while not xbmc.Monitor().abortRequested():
-            ab = check_refresh()
-            if ab:
-                result = check_login()
-                if result:
-                    validTo, beartoken, refrtoken, cookies = result
-
-                    addon.setSetting('cmore_validto', str(validTo))
-                    addon.setSetting('cmore_beartoken', str(beartoken))
-                    addon.setSetting('cmore_refrtoken', str(refrtoken))
-                    addon.setSetting('cmore_cookies', str(cookies))
-
-            if xbmc.Monitor().waitForAbort(1):
-                break
-
-            time.sleep(60)
 
 def build_url(query):
     return base_url + '?' + urlencode(query)
@@ -244,7 +219,7 @@ def create_data():
     return dashjs, tv_client_boot_id, timestamp, sessionid
 
 def check_login():
-    result = None
+    login = True
 
     valid_to = addon.getSetting('cmore_validto')
     beartoken = addon.getSetting('cmore_beartoken')
@@ -253,36 +228,10 @@ def check_login():
 
     refresh = refresh_timedelta(valid_to)
 
-    if not valid_to:
-        valid_to = datetime.now() + timedelta(days=1)
-
     if not beartoken or refresh < timedelta(minutes=1):
-        login = login_service(reconnect=False)
-        if login:
-            valid_to = addon.getSetting('cmore_validto')
-            beartoken = addon.getSetting('cmore_beartoken')
-            refrtoken = addon.getSetting('cmore_refrtoken')
-            cookies = addon.getSetting('cmore_cookies')
+        login = login_data(reconnect=False)
 
-    result = valid_to, beartoken, refrtoken, cookies
-
-    return result
-
-def check_refresh():
-    valid_to = addon.getSetting('cmore_validto')
-    beartoken = addon.getSetting('cmore_beartoken')
-
-    refresh = refresh_timedelta(valid_to)
-
-    if not valid_to:
-        valid_to = datetime.now() + timedelta(days=1)
-
-    if refresh:
-        refr = True if not beartoken or refresh < timedelta(minutes=1) else False
-    else:
-        refr = False
-
-    return refr
+    return login
 
 def refresh_timedelta(valid_to):
     result = None
@@ -308,8 +257,10 @@ def refresh_timedelta(valid_to):
 
     return result
 
-def login_service(reconnect, retry=0):
+def login_service():
     try:
+        login = False
+
         dashjs = addon.getSetting('cmore_devush')
         valid_to = addon.getSetting('cmore_validto')
         if (dashjs == '' or valid_to == ''):
@@ -320,13 +271,10 @@ def login_service(reconnect, retry=0):
                 pass
 
             create_data()
-            login = login_data(reconnect, retry)
+            login = login_data(reconnect=False)
 
         else:
-            login = True
-
-        if login:
-            run = Threading()
+            login = check_login()
 
         return login
 
@@ -413,7 +361,7 @@ def login_data(reconnect, retry=0):
         if not response:
             if reconnect and retry < 3:
                 retry += 1
-                login_service(reconnect=True, retry=retry)
+                login_data(reconnect=True, retry=retry)
             else:
                 xbmcgui.Dialog().notification(localized(30012), localized(30006))
                 return False
@@ -445,7 +393,7 @@ def login_data(reconnect, retry=0):
         if not response:
             if reconnect and retry < 3:
                 retry += 1
-                login_service(reconnect=True, retry=retry)
+                login_data(reconnect=True, retry=retry)
             else:
                 xbmcgui.Dialog().notification(localized(30012), localized(30007))
                 return False
@@ -505,7 +453,7 @@ def login_data(reconnect, retry=0):
                 addon.setSetting('cmore_devush', '')
                 if reconnect and retry < 1:
                     retry += 1
-                    login_service(reconnect=True, retry=retry)
+                    login_data(reconnect=True, retry=retry)
                 else:
                     return False
 
@@ -517,7 +465,7 @@ def login_data(reconnect, retry=0):
                 addon.setSetting('cmore_devush', '')
                 if reconnect and retry < 1:
                     retry += 1
-                    login_service(reconnect=True, retry=retry)
+                    login_data(reconnect=True, retry=retry)
                 else:
                     return False
 
@@ -529,7 +477,7 @@ def login_data(reconnect, retry=0):
                 addon.setSetting('cmore_tv_client_boot_id', str(tv_client_boot_id))
                 if reconnect and retry < 1:
                     retry += 1
-                    login_service(reconnect=True, retry=retry)
+                    login_data(reconnect=True, retry=retry)
                 else:
                     return False
 
@@ -558,7 +506,7 @@ def login_data(reconnect, retry=0):
         if not response:
             if reconnect and retry < 3:
                 retry += 1
-                login_service(reconnect=True, retry=retry)
+                login_data(reconnect=True, retry=retry)
             else:
                 return False
 
@@ -1060,7 +1008,7 @@ def search(query):
 def live_channels():
     channel_lst = []
 
-    login = login_service(reconnect=False)
+    login = login_service()
     if not login:
         xbmcgui.Dialog().notification(localized(30012), localized(30006))
         raise Exception
@@ -1888,6 +1836,10 @@ def favourites():
     xbmc.executebuiltin("ActivateWindow(10134)")
 
 def play(exlink, title, media_id, catchup_type, start, end):
+    login = check_login()
+    if not login:
+        login_data(reconnect=False)
+
     if exlink != 'vod':
         now = int(time.time())
 
@@ -1947,8 +1899,6 @@ def pincode():
             xbmcgui.Dialog().notification(localized(30012), localized(30045))
 
 def home():
-    check_login()
-
     get_childmode = addon.getSetting('cmore_childlock')
     if get_childmode == 'true':
         childmode = True
@@ -1961,7 +1911,7 @@ def home():
         profile_name = 'C More'
         profile_avatar = icon
 
-    login = login_service(reconnect=False)
+    login = login_service()
 
     if login and not childmode:
         add_item(label=localized(30009).format(profile_name), url='', mode='logged', icon=profile_avatar, fanart=fanart, folder=False, playable=False)
