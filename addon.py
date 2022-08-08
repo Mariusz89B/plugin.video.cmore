@@ -79,6 +79,7 @@ exid = params.get('media_id', '')
 excatchup = params.get('catchup', '')
 exstart = params.get('start', '')
 exend = params.get('end', '')
+exlabels = params.get('info_labels', '')
 
 profile_path = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
 
@@ -160,6 +161,9 @@ def add_item(label, url, mode, folder, playable, media_id='', catchup='', start=
             info = x_localized(19047)
             context_menu.insert(0, (info, 'Action(Info)'))
 
+    else:
+        list_item.setProperty('IsPlayable', 'false')
+
     if context_menu:
         list_item.addContextMenuItems(context_menu, replaceItems=True)
 
@@ -178,7 +182,7 @@ def add_item(label, url, mode, folder, playable, media_id='', catchup='', start=
 
     xbmcplugin.addDirectoryItem(
         handle=addon_handle,
-        url=build_url({'title': title, 'mode': mode, 'url': url, 'media_id': media_id, 'catchup': catchup, 'start': start, 'end': end}),
+        url=build_url({'title': title, 'mode': mode, 'url': url, 'media_id': media_id, 'catchup': catchup, 'start': start, 'end': end, 'info_labels': info_labels}),
         listitem=list_item,
         isFolder=folder)
 
@@ -537,7 +541,7 @@ def video_on_demand():
     add_item(label=localized(30030), url='', mode='vod_genre_movies', icon=icon, fanart=fanart, folder=True, playable=False)
     add_item(label=localized(30031), url='', mode='vod_genre_series', icon=icon, fanart=fanart, folder=True, playable=False)
 
-    xbmcplugin.endOfDirectory(addon_handle, cacheToDisc=False)
+    xbmcplugin.endOfDirectory(addon_handle)
 
 def vod_genre(genre):
     beartoken = addon.getSetting('cmore_beartoken')
@@ -600,7 +604,7 @@ def vod(genre_id):
     json = {
         'operationName': 'getCommonBrowsePage',
         'variables': {
-            'mediaContentLimit': 16,
+            'mediaContentLimit': 60,
             'pageId': genre_id
         },
 
@@ -766,7 +770,7 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
 
             if title not in titles:
                 count += 1
-                add_item(label=label, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title': title, 'originaltitle': title, 'plot': plot, 'plotoutline': outline, 'aired': date, 'dateadded': date, 'duration': duration, 'genre': genre, 'userrating': rating, 'mpaa': age}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=label, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title': title, 'sorttitle': title, 'originaltitle': title, 'plot': plot, 'plotoutline': outline, 'aired': date, 'dateadded': date, 'duration': duration, 'genre': genre, 'userrating': rating, 'mpaa': age}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
                 titles.add(title)
 
     xbmcplugin.setContent(addon_handle, 'sets')
@@ -950,7 +954,7 @@ def vod_episodes(season, season_id):
                 ext = localized(30027)
                 context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(label))]
 
-                add_item(label=label, url='vod', mode='play', media_id=media_id, folder=False, playable=True, info_labels={'title': title, 'originaltitle': title, 'plot': plot, 'genre': genre, 'director': directors, 'cast': actors_lst, 'sortepisode': episode_nr, 'sortseason': season_nr, 'mpaa': age, 'year': date}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=label, url='vod', mode='play', media_id=media_id, folder=False, playable=True, info_labels={'title': title, 'sorttitle': title, 'originaltitle': title, 'plot': plot, 'genre': genre, 'director': directors, 'cast': actors_lst, 'sortepisode': episode_nr, 'sortseason': season_nr, 'mpaa': age, 'year': date}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
 
     xbmcplugin.setContent(addon_handle, 'sets')
     xbmcplugin.endOfDirectory(addon_handle)
@@ -1315,7 +1319,7 @@ def live_channels():
 
     return channel_lst
 
-def catchup_channel(exlink, start):
+def get_programme(exlink, start):
     country            = int(addon.getSetting('cmore_locale'))
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
@@ -1389,7 +1393,7 @@ def catchup_channel(exlink, start):
                                     if playback_spec:
                                         excatchup = playback_spec.get('watchMode')
 
-        programs.update({'exlink':exlink, 'extitle': extitle, 'exid': exid, 'excatchup': excatchup, 'exstart': exstart_ts, 'exend': exend_ts})
+        programs.update({'exlink': exlink, 'extitle': extitle, 'exid': exid, 'excatchup': excatchup, 'exstart': exstart_ts, 'exend': exend_ts})
 
     if programs:
         return programs
@@ -1488,18 +1492,18 @@ def live_channel(exlink, extitle):
                     label = label[:50]
 
                 if int(now) >= int(start_time) and int(now) <= int(end_time):
-                    name_ = label + '[B][COLOR violet] â [/COLOR][/B]'
+                    name_ = label + '[B][COLOR violet] ● [/COLOR][/B]'
 
                 elif int(end_time) >= int(now):
                     name_ = '[COLOR grey]{0}[/COLOR] [B][/B]'.format(label)
 
                 else:
-                    name_ = label + '[B][COLOR limegreen] â [/COLOR][/B]'
+                    name_ = label + '[B][COLOR limegreen] ● [/COLOR][/B]'
 
                 title = name_ + '[COLOR grey]({0})[/COLOR]'.format(date)
 
             except:
-                name_ = label + '[B][COLOR violet] â [/COLOR][/B]'
+                name_ = label + '[B][COLOR violet] ● [/COLOR][/B]'
                 title = name_ + '[COLOR grey](00:00 - 23:59)[/COLOR]'
 
                 start_time = 0
@@ -2174,13 +2178,13 @@ def play(exlink, title, media_id, catchup_type, start, end):
     is_helper = inputstreamhelper.Helper(PROTOCOL, drm=DRM)
     if is_helper.check_inputstream():
         play_item = xbmcgui.ListItem(path=strm_url)
-        play_item.setInfo( type="Video", infoLabels={ "Title": title, } )
+        play_item.setInfo('Video', infoLabels={'title': title})
         play_item.setContentLookup(False)
         play_item.setProperty('inputstream', is_helper.inputstream_addon)
         play_item.setMimeType('application/xml+dash')
         play_item.setProperty('inputstream.adaptive.license_type', DRM)
         play_item.setProperty('inputstream.adaptive.license_key', license_url)
-        play_item.setProperty('inputstream.adaptive.stream_headers', 'Referer: https://www.cmore.se/&User-Agent='+quote(UA))
+        play_item.setProperty('inputstream.adaptive.stream_headers', 'Referer: https://www.cmore.se/&User-Agent=' + quote(UA))
         play_item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         play_item.setProperty('IsPlayable', 'true')
         if catchup_type != 'LIVE':
@@ -2364,13 +2368,25 @@ def router(param):
                 start = utc
                 url = args.get('url')
                 if url:
-                    prog = catchup_channel(url, start)
+                    prog = get_programme(url, start)
                     if not prog:
                         return
 
                     play(prog['exlink'], prog['extitle'], prog['exid'], prog['excatchup'], prog['exstart'], prog['exend'])
             else:
-                play(exlink, extitle, exid, excatchup, exstart, exend)
+                start = args.get('start')
+                url = args.get('url')
+
+                if not start:
+                    catchup = 'LIVE'
+
+                    start = 0
+                    end = 0
+
+                    play(exlink, extitle, exid, catchup, start, end)
+
+                else:
+                    play(exlink, extitle, exid, excatchup, exstart, exend)
 
         elif mode == 'programs':
             live_channel(exlink, extitle)
