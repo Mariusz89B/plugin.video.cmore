@@ -42,7 +42,6 @@
 #   Disclaimer
 #   This add-on is unoffical and is not endorsed or supported by C More Entertainment in any way. Any trademarks used belong to their owning companies and organisations.
 
-from gc import get_count
 import sys
 import os
 
@@ -623,7 +622,7 @@ def vod(genre_id):
             xbmcgui.Dialog().notification(localized(30012), localized(30048))
             return
 
-def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlogo, icon=icon, fanart=fanart):
+def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlogo, icon=icon, fanart=fanart):
     titles = set()
     count = 0
 
@@ -643,12 +642,14 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
                     media_id = content.get('id')
                     typename = content.get('__typename')
 
-            mode = 'play'
-            folder = False
-            playable = True
+            type_ = media.get('type')
+
+            url = 'vod'
 
             if typename == 'Movie':
                 mode = 'play'
+                folder = False
+                playable = True
 
             elif typename == 'Series':
                 mode = 'seasons'
@@ -657,16 +658,27 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
 
             elif typename == 'SportEvent':
                 mode = 'play'
+                folder = False
+                playable = True
 
             elif typename == 'Store':
                 mode = 'vod_store'
                 folder = True
                 playable = False
 
+            else:
+                folder = True
+                playable = False
+
+                if not mode:
+                    mode = 'play'
+                    folder = False
+                    playable = True
+
             label = media.get('title')
             if not label:
-                name = media.get('name')
-                if not name:
+                label = media.get('name')
+                if not label:
                     showcase_title = media.get('showcaseTitle')
                     if showcase_title:
                         label = showcase_title.get('text')
@@ -686,7 +698,10 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
                             start_time = timestamp // 1000
 
                             dt_start = datetime.fromtimestamp(start_time)
-                            da_start = dt_start.strftime('%H:%M')
+                            try:
+                                da_start = dt_start.strftime('%A %#d/%#m %H:%M')
+                            except:
+                                da_start = dt_start.strftime('%A %-d/%-m %H:%M')
 
                             if da_start != '00:00':
                                 title = label + ' [COLOR grey]({0})[/COLOR]'.format(da_start)
@@ -741,6 +756,14 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
 
             images = media.get('images')
             if images:
+                card_1x1 = images.get('icon1x1') if images.get('icon1x1') else images.get('icon1x1')
+                if card_1x1:
+                    src = card_1x1.get('sourceNonEncoded')
+                    if not src:
+                        src = card_1x1.get('source')
+                    if src:
+                        poster = unquote(src)
+
                 card_2x3 = images.get('showcard2x3') if images.get('showcard2x3') else images.get('showcase2x3')
                 if card_2x3:
                     src = card_2x3.get('sourceNonEncoded')
@@ -770,7 +793,7 @@ def get_items(data, thumb=thumb, poster=poster, banner=banner, clearlogo=clearlo
 
             if title not in titles:
                 count += 1
-                add_item(label=label, url='vod', mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title': title, 'sorttitle': title, 'originaltitle': title, 'plot': plot, 'plotoutline': outline, 'aired': date, 'dateadded': date, 'duration': duration, 'genre': genre, 'userrating': rating, 'mpaa': age}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
+                add_item(label=label, url=url, mode=mode, media_id=media_id, folder=folder, playable=playable, info_labels={'title': title, 'sorttitle': title, 'originaltitle': title, 'plot': plot, 'plotoutline': outline, 'aired': date, 'dateadded': date, 'duration': duration, 'genre': genre, 'userrating': rating, 'mpaa': age}, icon=icon, poster=poster, fanart=fanart, context_menu=context_menu, item_count=count)
                 titles.add(title)
 
     xbmcplugin.setContent(addon_handle, 'sets')
@@ -1835,7 +1858,6 @@ def sports(genre_id):
             if items:
                 get_items(items)
             else:
-                print(items)
                 raise Exception
 
         except Exception as ex:
@@ -1882,7 +1904,6 @@ def sports_upcoming_genre():
         genres = []
 
         data = j_response['data']['page']['pagePanels']['items']
-
         key = -1
         for item in data:
             key += 1
@@ -1916,15 +1937,33 @@ def sports_upcoming_genre():
 
             if items:
                 if item['title'] != '':
-                    genres.append((key, item['title']))
+                    sub = True
+                    timeline = item.get('timelineContent')
+                    if timeline:
+                        sub = False
+                        for i in timeline['items']:
+                            media = i.get('media')
+                            if media:
+                                playback = media.get('playback')
+                                if playback:
+                                    play = playback.get('play')
+                                    if play.get('subscription'):
+                                        sub = True
+                    if sub:
+                        genres.append((key, item['title']))
 
         for gen in genres:
             add_item(label=gen[1], url=str(gen[0]), mode='sports_upcoming', icon=icon, fanart=fanart, folder=True, playable=False)
 
     xbmcplugin.endOfDirectory(addon_handle)
 
-def sports_upcoming(genre_id):
-    idx = int(genre_id)
+def sports_upcoming(genre_id, media_id):
+    if not media_id:
+        media_id = 'sports/upcoming'
+        idx = int(genre_id)
+
+    else:
+        idx = -1
 
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
@@ -1953,7 +1992,7 @@ def sports_upcoming(genre_id):
         'variables': {
             'channelsLimit': 200,
             'mediaContentLimit': 60,
-            'pageId': 'sports/upcoming',
+            'pageId': media_id,
             'timestamp': timestamp
         },
 
@@ -1997,7 +2036,11 @@ def sports_upcoming(genre_id):
             xbmcgui.Dialog().notification(localized(30012), localized(30048))
             return
 
-        get_items(items)
+        mode = None
+        if j_response['data']['page']['id'] == 'sports/upcoming':
+            mode = 'sports_upcoming'
+
+        get_items(items, mode)
 
     except Exception as ex:
         print('sports Exception: {}'.format(ex))
@@ -2430,7 +2473,7 @@ def router(param):
             sports_upcoming_genre()
 
         elif mode == 'sports_upcoming':
-            sports_upcoming(exlink)
+            sports_upcoming(exlink, exid)
 
         elif mode == 'kids_genre':
             kids_genre()
