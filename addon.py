@@ -2112,7 +2112,7 @@ def kids_genre():
             elif showcase:
                 items = showcase.get('items')
 
-            else:
+            elif stores:
                 items = stores.get('items')
 
             if items:
