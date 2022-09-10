@@ -789,7 +789,7 @@ def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearl
             ext = localized(30027)
             context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.teliaplay,0,?mode=ext,label={0})'.format(title))]
 
-            xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
+            #xbmcplugin.addSortMethod(addon_handle, sortMethod=xbmcplugin.SORT_METHOD_TITLE, label2Mask = "%R, %Y, %P")
 
             if title not in titles:
                 count += 1
@@ -1853,7 +1853,12 @@ def sports(genre_id):
                 for item in i['items']:
                     genre = item['media']['genre']
                     if genre == idx:
-                        items = i['items']
+                        ts = item['startTime']['timestamp'] // 1000
+                        dt_obj = datetime.fromtimestamp(ts)
+                        date = dt_obj.date()
+                        item_date_time = date.strftime('%Y-%m-%d')
+                        if date_time == item_date_time:
+                            items = i['items']
 
             if items:
                 get_items(items)
@@ -1869,7 +1874,9 @@ def sports_upcoming_genre():
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
 
-    timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
+    #timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
+    start_str = time.strftime('%m-%d-%Y') + ' 00:00:00'
+    timestamp = int(time.mktime(time.strptime(start_str, '%m-%d-%Y %H:%M:%S')))
 
     url = 'https://graphql-cmore.t6a.net/'
 
