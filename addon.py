@@ -1847,7 +1847,7 @@ def sports(genre_id):
 
         try:
             data = j_response['data']['sportEventList']['content']['sections']
-            items = None
+            items = []
 
             for i in data:
                 for item in i['items']:
@@ -1858,7 +1858,7 @@ def sports(genre_id):
                         date = dt_obj.date()
                         item_date_time = date.strftime('%Y-%m-%d')
                         if date_time == item_date_time:
-                            items = i['items']
+                            items.append(item)
 
             if items:
                 get_items(items)
@@ -1874,7 +1874,6 @@ def sports_upcoming_genre():
     beartoken          = addon.getSetting('cmore_beartoken')
     tv_client_boot_id  = addon.getSetting('cmore_tv_client_boot_id')
 
-    #timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
     start_str = time.strftime('%m-%d-%Y') + ' 00:00:00'
     timestamp = int(time.mktime(time.strptime(start_str, '%m-%d-%Y %H:%M:%S')))
 
