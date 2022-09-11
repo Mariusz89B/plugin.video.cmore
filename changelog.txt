@@ -1,3 +1,7 @@
+v1.1.6 (2022-09-11)
+- Revised starttime information for events.
+- Fixed start for live events.
+
 v1.1.5 (2022-09-10)
 - Fixed timestamps. 
 - Fixed kids section.
