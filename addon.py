@@ -706,9 +706,9 @@ def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearl
                 start_time = timestamp // 1000
 
                 dt_start = datetime.fromtimestamp(start_time)
-                try:
+                if os.name == 'nt':
                     da_start = dt_start.strftime('%A %#d/%#m %H:%M')
-                except:
+                else:
                     da_start = dt_start.strftime('%A %-d/%-m %H:%M')
 
                 if da_start != '00:00':
@@ -771,6 +771,8 @@ def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearl
                         src = card_1x1.get('source')
                     if src:
                         poster = unquote(src)
+                    else:
+                        poster = fanart
 
                 card_2x3 = images.get('showcard2x3') if images.get('showcard2x3') else images.get('showcase2x3')
                 if card_2x3:
@@ -779,6 +781,8 @@ def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearl
                         src = card_2x3.get('source')
                     if src:
                         poster = unquote(src)
+                    else:
+                        poster = fanart
 
                 card_16x9 = images.get('showcard16x9') if images.get('showcard16x9') else images.get('showcase16x9')
                 if card_16x9:
@@ -787,12 +791,16 @@ def get_items(data, mode=None, thumb=thumb, poster=poster, banner=banner, clearl
                         src = card_16x9.get('source')
                     if src:
                         poster = unquote(src)
+                    else:
+                        poster = fanart
 
             else:
                 icons = media.get('icons')
                 if icons:
                     poster = icons.get('dark').get('sourceNonEncoded')
                     plot = typename
+                else:
+                    poster = fanart
 
             ext = localized(30027)
             context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.teliaplay,0,?mode=ext,label={0})'.format(title))]
@@ -973,6 +981,9 @@ def vod_episodes(season, season_id):
                         if src:
                             poster = unquote(src)
 
+                    else:
+                        poster = fanart
+
                     icon = ''
                     card_16x9 = images.get('showcard16x9')
                     if card_16x9:
@@ -981,6 +992,11 @@ def vod_episodes(season, season_id):
                             src = card_16x9.get('source')
                         if src:
                             icon = unquote(src)
+                    else:
+                        poster = fanart
+
+                else:
+                    poster = fanart
 
                 ext = localized(30027)
                 context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(label))]
@@ -1178,6 +1194,11 @@ def now_playing(thumb=thumb, poster=poster, banner=banner, clearlogo=clearlogo, 
                                     src = card_16x9.get('source')
                                 if src:
                                     poster = unquote(src)
+                            else:
+                                poster = fanart
+
+                        else:
+                            poster = fanart
 
                         plot = media.get('descriptionLong')
                         outline = plot
@@ -1583,6 +1604,9 @@ def live_channel(exlink, extitle):
                     if src:
                         poster = unquote(src)
 
+                else:
+                    poster = fanart
+
                 card_16x9 = images.get('showcard16x9')
                 if card_16x9:
                     src = card_16x9.get('sourceNonEncoded')
@@ -1590,6 +1614,11 @@ def live_channel(exlink, extitle):
                         src = card_16x9.get('source')
                     if src:
                         icon = unquote(src)
+                else:
+                    poster = fanart
+
+            else:
+                poster = fanart
 
             ext = localized(30027)
             context_menu = [('{0}'.format(ext), 'RunScript(plugin.video.cmore,0,?mode=ext,label={0})'.format(label))]
@@ -1985,7 +2014,7 @@ def sports_upcoming(genre_id, media_id):
     n = datetime.now()
     now = int(time.mktime(n.timetuple())) * 1000
 
-    timestamp = str(((int(time.time() // 86400)) * 86400) * 1000)
+    timestamp = int(((int(time.time() // 86400)) * 86400) * 1000)
 
     url = 'https://graphql-cmore.t6a.net/'
 
